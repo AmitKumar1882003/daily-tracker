@@ -1,57 +1,39 @@
-// Enhanced Daily Activity Tracker with Goals and GitHub Gist Sync
+// Enhanced NEET-PG Daily Activity Tracker with Goals and GitHub Sync
 
-class DailyTracker {
+class NEETPGTracker {
     constructor() {
         this.currentDate = new Date();
         this.currentWeekStart = this.getWeekStart(this.currentDate);
         this.currentMonth = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), 1);
         this.selectedDate = null;
         this.currentView = 'weekly';
+        this.currentGoalsView = 'weekly';
         
-        // Motivational quotes collection
+        // NEET-PG specific motivational quotes
         this.motivationalQuotes = [
-            "Success is the sum of small efforts repeated day in and day out.",
-            "The way to get started is to quit talking and begin doing.",
-            "Don't wish it were easier; wish you were better.",
-            "Discipline is choosing between what you want now and what you want most.",
-            "Excellence is not a skill, it's an attitude.",
-            "Progress, not perfection.",
-            "Small daily improvements lead to staggering yearly results.",
-            "The secret of getting ahead is getting started.",
-            "You don't have to be great to get started, but you have to get started to be great.",
-            "Success isn't just about what you accomplish in your life, it's about what you inspire others to do.",
-            "The only impossible journey is the one you never begin.",
-            "Quality is not an act, it is a habit.",
-            "Champions keep playing until they get it right.",
-            "The difference between ordinary and extraordinary is that little extra.",
-            "Success is where preparation and opportunity meet.",
-            "It is during our darkest moments that we must focus to see the light.",
-            "Believe you can and you're halfway there.",
-            "The future depends on what you do today.",
-            "Don't watch the clock; do what it does. Keep going.",
-            "The expert in anything was once a beginner.",
-            "Your limitation—it's only your imagination.",
-            "Push yourself, because no one else is going to do it for you.",
-            "Great things never come from comfort zones.",
-            "Dream it. Wish it. Do it.",
-            "Success doesn't just find you. You have to go out and get it.",
-            "The harder you work for something, the greater you'll feel when you achieve it.",
-            "Dream bigger. Do bigger.",
-            "Don't stop when you're tired. Stop when you're done.",
-            "Wake up with determination. Go to bed with satisfaction.",
-            "Do something today that your future self will thank you for."
+            "Every MCQ you solve takes you one step closer to your dream specialty! 🎯",
+            "Your dedication today determines your rank tomorrow. Keep pushing! 💪",
+            "NEET-PG is not about luck, it's about consistent effort and smart study! 📚",
+            "Remember: Top rankers aren't born, they're made through daily discipline! ⭐",
+            "Each Anki review is an investment in your medical career! 🩺",
+            "Success in NEET-PG comes to those who never give up. You've got this! 🚀",
+            "Your future patients are counting on your preparation today! ❤️",
+            "Mock tests today, dream specialty tomorrow! 🎓",
+            "Consistency beats intensity. Show up every day! 🌟",
+            "The best doctors are those who never stopped learning. Keep studying! 📖"
         ];
         
-        // Habit colors
+        // NEET-PG specific habit colors
         this.habitColors = {
-            "Study/Learning": "#3B82F6",
-            "Exercise": "#10B981", 
-            "Reading": "#EF4444",
-            "Planning": "#8B5CF6",
-            "Review Sessions": "#06B6D4",
-            "Project Work": "#F59E0B",
-            "Skill Development": "#EC4899",
-            "Health Care": "#14B8A6"
+            "Anki Reviews (500+ cards)": "#3B82F6",
+            "Pathology MCQs": "#10B981", 
+            "Anatomy Revision": "#EF4444",
+            "Pharmacology Study": "#8B5CF6",
+            "Mock Test": "#06B6D4",
+            "Physiology Notes": "#F59E0B",
+            "Clinical Subjects": "#EC4899",
+            "Gym/Exercise": "#14B8A6",
+            "Medical Videos": "#6366F1"
         };
         
         // Available colors for new habits
@@ -61,82 +43,198 @@ class DailyTracker {
             "#84CC16", "#A855F7", "#E11D48", "#0EA5E9", "#65A30D"
         ];
         
-        // Default habits
+        // NEET-PG focused default habits
         this.defaultHabits = [
-            "Study/Learning",
-            "Exercise", 
-            "Reading",
-            "Planning",
-            "Review Sessions",
-            "Project Work",
-            "Skill Development",
-            "Health Care"
+            "Anki Reviews (500+ cards)",
+            "Pathology MCQs",
+            "Anatomy Revision", 
+            "Pharmacology Study",
+            "Mock Test",
+            "Physiology Notes",
+            "Clinical Subjects",
+            "Gym/Exercise",
+            "Medical Videos"
         ];
 
-        // GitHub sync settings
-        this.githubSettings = {
-            token: '',
-            gistId: '',
+        // Sync configuration
+        this.syncConfig = {
+            enabled: false,
+            gistId: null,
+            githubToken: null,
             lastSync: null,
-            autoSync: false
+            autoSyncInterval: 30000, // 30 seconds
+            syncInProgress: false
         };
 
-        // Sync status
-        this.syncInProgress = false;
-        this.syncInterval = null;
+        this.autoSyncTimer = null;
         
         this.init();
     }
     
     init() {
-        console.log('Initializing Enhanced Daily Tracker...');
-        // Wait for DOM to be fully loaded
-        setTimeout(() => {
-            this.loadData();
-            this.displayRandomQuote();
-            this.setupEventListeners();
-            this.renderCurrentView();
-            this.loadGitHubSettings();
-            this.setupAutoSync();
-        }, 100);
+        console.log('Initializing Enhanced NEET-PG Tracker...');
+        this.loadData();
+        this.setupEventListeners();
+        this.showRandomQuote();
+        this.initializeSync();
+        // Important: render current view after all setup is complete
+        this.renderCurrentView();
+    }
+
+    showRandomQuote() {
+        const quoteElement = document.getElementById('motivationalQuote');
+        if (quoteElement) {
+            const randomQuote = this.motivationalQuotes[Math.floor(Math.random() * this.motivationalQuotes.length)];
+            quoteElement.textContent = randomQuote;
+        }
     }
     
     loadData() {
         // Load from localStorage
-        const storedData = localStorage.getItem('dailyTrackerData');
+        const storedData = localStorage.getItem('neetpgTrackerData');
         if (storedData) {
             const data = JSON.parse(storedData);
             this.entries = data.entries || {};
             this.customHabits = data.customHabits || [];
             this.habitColors = { ...this.habitColors, ...(data.habitColors || {}) };
-            this.goals = data.goals || this.getDefaultGoals();
+            this.goals = data.goals || this.getInitialGoalsData();
+            this.syncConfig = { ...this.syncConfig, ...(data.syncConfig || {}) };
         } else {
             // Use provided application data as initial data
-            this.entries = {};
-            this.goals = this.getDefaultGoals();
+            this.entries = {
+                "2025-09-05": {
+                    "text": "Had an incredibly productive NEET-PG study day! Completed 800 Anki cards focusing on Cardiovascular Pathology with 95% accuracy. Solved 150 MCQs on Pharmacology - scored 85% which is a significant improvement from last week. Spent 3 hours on Anatomy revision covering Upper Limb in detail, made comprehensive notes and diagrams. Watched 4 high-yield medical videos on Marrow covering recent exam patterns. Took a 2-hour mock test and analyzed all mistakes thoroughly. Feeling confident about the preparation strategy and motivated to continue this momentum. Tomorrow planning to focus on Respiratory system pathology and complete pending Physiology topics.",
+                    "habits": {
+                        "Anki Reviews (500+ cards)": true,
+                        "Pathology MCQs": true,
+                        "Anatomy Revision": true,
+                        "Pharmacology Study": true,
+                        "Mock Test": true,
+                        "Physiology Notes": false,
+                        "Clinical Subjects": true,
+                        "Gym/Exercise": false,
+                        "Medical Videos": true
+                    },
+                    "timestamp": "2025-09-05T20:31:00.000Z"
+                }
+            };
+
+            this.goals = this.getInitialGoalsData();
             this.customHabits = [];
             this.saveData();
         }
     }
 
-    getDefaultGoals() {
+    getInitialGoalsData() {
         return {
-            weekly: [
-                { id: 'w1', text: 'Complete 3 major study sessions', completed: false },
-                { id: 'w2', text: 'Exercise 5 times this week', completed: false },
-                { id: 'w3', text: 'Read 2 chapters of current book', completed: true },
-                { id: 'w4', text: 'Plan next week\'s objectives', completed: false }
-            ],
-            monthly: [
-                { id: 'm1', text: 'Complete current course/program', completed: false },
-                { id: 'm2', text: 'Maintain consistent daily habits', completed: false },
-                { id: 'm3', text: 'Finish 2 major projects', completed: false }
-            ],
-            yearly: [
-                { id: 'y1', text: 'Achieve primary career goal', completed: false },
-                { id: 'y2', text: 'Develop 3 new major skills', completed: false },
-                { id: 'y3', text: 'Maintain excellent health and fitness', completed: false }
-            ]
+            weekly: {
+                "2025-W36": [
+                    {
+                        id: "w1",
+                        text: "Complete Pathology: Cardiovascular System (500 Anki cards)",
+                        completed: false,
+                        dateAdded: "2025-09-05"
+                    },
+                    {
+                        id: "w2", 
+                        text: "Solve 200 MCQs on Pharmacology",
+                        completed: true,
+                        dateAdded: "2025-09-02"
+                    },
+                    {
+                        id: "w3",
+                        text: "Gym 5 days (strength + cardio for study stamina)",
+                        completed: false,
+                        dateAdded: "2025-09-02"
+                    },
+                    {
+                        id: "w4",
+                        text: "Complete Anatomy revision: Upper Limb",
+                        completed: false,
+                        dateAdded: "2025-09-03"
+                    },
+                    {
+                        id: "w5",
+                        text: "Take 2 mock tests and analyze mistakes",
+                        completed: false,
+                        dateAdded: "2025-09-04"
+                    }
+                ]
+            },
+            monthly: {
+                "2025-09": [
+                    {
+                        id: "m1",
+                        text: "Master Pathology: Complete CVS, Respiratory, GIT systems",
+                        completed: false,
+                        dateAdded: "2025-09-01"
+                    },
+                    {
+                        id: "m2",
+                        text: "Solve 2000+ MCQs across all subjects",
+                        completed: false,
+                        dateAdded: "2025-09-01"
+                    },
+                    {
+                        id: "m3",
+                        text: "Take 8 full-length mock tests",
+                        completed: false,
+                        dateAdded: "2025-09-01"
+                    },
+                    {
+                        id: "m4",
+                        text: "Maintain 95%+ Anki review accuracy",
+                        completed: false,
+                        dateAdded: "2025-09-01"
+                    },
+                    {
+                        id: "m5",
+                        text: "Gym 25 days for study stamina and stress relief",
+                        completed: false,
+                        dateAdded: "2025-09-01"
+                    }
+                ]
+            },
+            yearly: {
+                "2025": [
+                    {
+                        id: "y1",
+                        text: "Score 700+ in NEET-PG 2025 (target: top 1000 rank)",
+                        completed: false,
+                        dateAdded: "2025-01-01"
+                    },
+                    {
+                        id: "y2",
+                        text: "Master all high-yield topics with 95%+ accuracy",
+                        completed: false,
+                        dateAdded: "2025-01-01"
+                    },
+                    {
+                        id: "y3",
+                        text: "Complete 50,000+ Anki reviews with retention >90%",
+                        completed: false,
+                        dateAdded: "2025-01-01"
+                    },
+                    {
+                        id: "y4",
+                        text: "Take 100+ mock tests and analyze all mistakes",
+                        completed: false,
+                        dateAdded: "2025-01-01"
+                    },
+                    {
+                        id: "y5",
+                        text: "Maintain fitness: 300+ gym sessions for study stamina",
+                        completed: false,
+                        dateAdded: "2025-01-01"
+                    },
+                    {
+                        id: "y6",
+                        text: "Secure admission in dream specialty/college",
+                        completed: false,
+                        dateAdded: "2025-01-01"
+                    }
+                ]
+            }
         };
     }
     
@@ -146,210 +244,396 @@ class DailyTracker {
             customHabits: this.customHabits,
             habitColors: this.habitColors,
             goals: this.goals,
+            syncConfig: this.syncConfig,
             version: "3.0.0",
             lastUpdated: new Date().toISOString()
         };
-        localStorage.setItem('dailyTrackerData', JSON.stringify(data));
+        localStorage.setItem('neetpgTrackerData', JSON.stringify(data));
         
         // Trigger sync if enabled
-        if (this.githubSettings.autoSync && !this.syncInProgress) {
-            this.debouncedSync();
+        if (this.syncConfig.enabled && !this.syncConfig.syncInProgress) {
+            this.syncToGist();
         }
     }
 
-    displayRandomQuote() {
-        const quoteElement = document.getElementById('motivationalQuote');
-        if (quoteElement) {
-            const randomQuote = this.motivationalQuotes[Math.floor(Math.random() * this.motivationalQuotes.length)];
-            quoteElement.textContent = `"${randomQuote}"`;
+    // GitHub Gist Sync Methods
+    initializeSync() {
+        this.updateSyncStatus();
+        
+        // Show or hide sync setup card based on sync status
+        this.updateSyncSetupVisibility();
+
+        // Start auto-sync if enabled
+        if (this.syncConfig.enabled) {
+            this.startAutoSync();
         }
+    }
+
+    updateSyncSetupVisibility() {
+        const syncSetupCard = document.getElementById('syncSetupCard');
+        if (syncSetupCard) {
+            if (this.syncConfig.enabled) {
+                syncSetupCard.classList.add('hidden');
+            } else {
+                syncSetupCard.classList.remove('hidden');
+            }
+        }
+    }
+
+    startAutoSync() {
+        if (this.autoSyncTimer) {
+            clearInterval(this.autoSyncTimer);
+        }
+        
+        this.autoSyncTimer = setInterval(() => {
+            if (this.syncConfig.enabled && !this.syncConfig.syncInProgress) {
+                this.syncToGist();
+            }
+        }, this.syncConfig.autoSyncInterval);
+    }
+
+    stopAutoSync() {
+        if (this.autoSyncTimer) {
+            clearInterval(this.autoSyncTimer);
+            this.autoSyncTimer = null;
+        }
+    }
+
+    updateSyncStatus(status = 'offline', message = 'Offline') {
+        const indicator = document.getElementById('syncIndicator');
+        const text = document.getElementById('syncText');
+        
+        if (indicator && text) {
+            // Remove all status classes
+            indicator.className = 'sync-indicator';
+            // Add the specific status class
+            indicator.classList.add(status);
+            text.textContent = message;
+        }
+    }
+
+    async testGitHubConnection(token) {
+        try {
+            const response = await fetch('https://api.github.com/user', {
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+
+            if (response.ok) {
+                const user = await response.json();
+                return { success: true, user };
+            } else {
+                return { success: false, error: 'Invalid token or insufficient permissions' };
+            }
+        } catch (error) {
+            return { success: false, error: 'Network error: ' + error.message };
+        }
+    }
+
+    async createGist(data) {
+        const gistData = {
+            description: "NEET-PG Tracker Data - Private Backup",
+            public: false,
+            files: {
+                "neetpg-tracker-data.json": {
+                    content: JSON.stringify(data, null, 2)
+                }
+            }
+        };
+
+        try {
+            const response = await fetch('https://api.github.com/gists', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `token ${this.syncConfig.githubToken}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(gistData)
+            });
+
+            if (response.ok) {
+                const gist = await response.json();
+                return { success: true, gist };
+            } else {
+                const error = await response.json();
+                return { success: false, error: error.message };
+            }
+        } catch (error) {
+            return { success: false, error: 'Network error: ' + error.message };
+        }
+    }
+
+    async updateGist(gistId, data) {
+        const gistData = {
+            files: {
+                "neetpg-tracker-data.json": {
+                    content: JSON.stringify(data, null, 2)
+                }
+            }
+        };
+
+        try {
+            const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `token ${this.syncConfig.githubToken}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(gistData)
+            });
+
+            if (response.ok) {
+                return { success: true };
+            } else {
+                const error = await response.json();
+                return { success: false, error: error.message };
+            }
+        } catch (error) {
+            return { success: false, error: 'Network error: ' + error.message };
+        }
+    }
+
+    async syncToGist() {
+        if (this.syncConfig.syncInProgress) return;
+        
+        this.syncConfig.syncInProgress = true;
+        this.updateSyncStatus('syncing', 'Syncing...');
+
+        try {
+            const dataToSync = {
+                entries: this.entries,
+                customHabits: this.customHabits,
+                habitColors: this.habitColors,
+                goals: this.goals,
+                version: "3.0.0",
+                lastUpdated: new Date().toISOString()
+            };
+
+            let result;
+            if (this.syncConfig.gistId) {
+                // Update existing gist
+                result = await this.updateGist(this.syncConfig.gistId, dataToSync);
+            } else {
+                // Create new gist
+                result = await this.createGist(dataToSync);
+                if (result.success) {
+                    this.syncConfig.gistId = result.gist.id;
+                }
+            }
+
+            if (result.success) {
+                this.syncConfig.lastSync = new Date().toISOString();
+                this.updateSyncStatus('synced', `Synced ${this.formatSyncTime(this.syncConfig.lastSync)}`);
+                
+                // Update localStorage with sync config
+                const localData = JSON.parse(localStorage.getItem('neetpgTrackerData') || '{}');
+                localData.syncConfig = this.syncConfig;
+                localStorage.setItem('neetpgTrackerData', JSON.stringify(localData));
+            } else {
+                this.updateSyncStatus('error', 'Sync failed');
+                console.error('Sync failed:', result.error);
+            }
+        } catch (error) {
+            this.updateSyncStatus('error', 'Sync failed');
+            console.error('Sync error:', error);
+        } finally {
+            this.syncConfig.syncInProgress = false;
+        }
+    }
+
+    formatSyncTime(timestamp) {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        
+        if (diffMins < 1) return 'just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+        return date.toLocaleDateString();
+    }
+
+    // Goals Management Methods
+    getCurrentWeekKey() {
+        const year = this.currentDate.getFullYear();
+        const week = this.getWeekNumber(this.currentDate);
+        return `${year}-W${week.toString().padStart(2, '0')}`;
+    }
+
+    getCurrentMonthKey() {
+        const year = this.currentDate.getFullYear();
+        const month = this.currentDate.getMonth() + 1;
+        return `${year}-${month.toString().padStart(2, '0')}`;
+    }
+
+    getCurrentYearKey() {
+        return this.currentDate.getFullYear().toString();
+    }
+
+    getWeekNumber(date) {
+        const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+        const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
+        return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+    }
+
+    addGoal(period) {
+        const input = document.getElementById(`new${period.charAt(0).toUpperCase() + period.slice(1)}Goal`);
+        if (!input) return;
+
+        const goalText = input.value.trim();
+        if (!goalText) return;
+
+        let key;
+        switch(period) {
+            case 'weekly':
+                key = this.getCurrentWeekKey();
+                break;
+            case 'monthly':
+                key = this.getCurrentMonthKey();
+                break;
+            case 'yearly':
+                key = this.getCurrentYearKey();
+                break;
+        }
+
+        if (!this.goals[period][key]) {
+            this.goals[period][key] = [];
+        }
+
+        const newGoal = {
+            id: Date.now().toString(),
+            text: goalText,
+            completed: false,
+            dateAdded: new Date().toISOString().split('T')[0]
+        };
+
+        this.goals[period][key].push(newGoal);
+        input.value = '';
+        this.saveData();
+        this.renderGoals();
+        this.showToast(`${period.charAt(0).toUpperCase() + period.slice(1)} goal added!`, 'success');
+    }
+
+    toggleGoal(period, key, goalId) {
+        const goals = this.goals[period][key];
+        if (!goals) return;
+
+        const goal = goals.find(g => g.id === goalId);
+        if (goal) {
+            goal.completed = !goal.completed;
+            this.saveData();
+            this.renderGoals();
+        }
+    }
+
+    removeGoal(period, key, goalId) {
+        const goals = this.goals[period][key];
+        if (!goals) return;
+
+        this.goals[period][key] = goals.filter(g => g.id !== goalId);
+        this.saveData();
+        this.renderGoals();
+        this.showToast('Goal removed!', 'success');
+    }
+
+    calculateProgress(goals) {
+        if (!goals || goals.length === 0) return { completed: 0, total: 0, percentage: 0 };
+        
+        const completed = goals.filter(g => g.completed).length;
+        const total = goals.length;
+        const percentage = Math.round((completed / total) * 100);
+        
+        return { completed, total, percentage };
     }
     
     setupEventListeners() {
-        console.log('Setting up event listeners...');
+        // Tab navigation
+        document.getElementById('weeklyTab')?.addEventListener('click', () => this.switchView('weekly'));
+        document.getElementById('monthlyTab')?.addEventListener('click', () => this.switchView('monthly'));
+        document.getElementById('goalsTab')?.addEventListener('click', () => this.switchView('goals'));
         
-        // Tab navigation - with preventDefault to stop any default behavior
-        const weeklyTab = document.getElementById('weeklyTab');
-        const monthlyTab = document.getElementById('monthlyTab');
-        const goalsTab = document.getElementById('goalsTab');
-        
-        if (weeklyTab) {
-            weeklyTab.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.switchView('weekly');
-            });
-        }
-        if (monthlyTab) {
-            monthlyTab.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.switchView('monthly');
-            });
-        }
-        if (goalsTab) {
-            goalsTab.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.switchView('goals');
-            });
-        }
+        // Goals tab navigation
+        document.getElementById('weeklyGoalsTab')?.addEventListener('click', () => this.switchGoalsView('weekly'));
+        document.getElementById('monthlyGoalsTab')?.addEventListener('click', () => this.switchGoalsView('monthly'));
+        document.getElementById('yearlyGoalsTab')?.addEventListener('click', () => this.switchGoalsView('yearly'));
         
         // Navigation controls
-        const prevWeek = document.getElementById('prevWeek');
-        const nextWeek = document.getElementById('nextWeek');
-        const prevMonth = document.getElementById('prevMonth');
-        const nextMonth = document.getElementById('nextMonth');
-        const todayBtn = document.getElementById('todayBtn');
+        document.getElementById('prevWeek')?.addEventListener('click', () => this.navigateWeek(-1));
+        document.getElementById('nextWeek')?.addEventListener('click', () => this.navigateWeek(1));
+        document.getElementById('prevMonth')?.addEventListener('click', () => this.navigateMonth(-1));
+        document.getElementById('nextMonth')?.addEventListener('click', () => this.navigateMonth(1));
+        document.getElementById('todayBtn')?.addEventListener('click', () => this.goToToday());
         
-        if (prevWeek) prevWeek.addEventListener('click', (e) => { e.preventDefault(); this.navigateWeek(-1); });
-        if (nextWeek) nextWeek.addEventListener('click', (e) => { e.preventDefault(); this.navigateWeek(1); });
-        if (prevMonth) prevMonth.addEventListener('click', (e) => { e.preventDefault(); this.navigateMonth(-1); });
-        if (nextMonth) nextMonth.addEventListener('click', (e) => { e.preventDefault(); this.navigateMonth(1); });
-        if (todayBtn) todayBtn.addEventListener('click', (e) => { e.preventDefault(); this.goToToday(); });
+        // Sync controls
+        document.getElementById('setupSync')?.addEventListener('click', () => this.openSyncSetupModal());
+        document.getElementById('manualSync')?.addEventListener('click', () => this.syncToGist());
+        document.getElementById('testConnection')?.addEventListener('click', () => this.testConnection());
+        document.getElementById('enableSync')?.addEventListener('click', () => this.enableSync());
+        document.getElementById('closeSyncSetup')?.addEventListener('click', () => this.closeSyncSetupModal());
         
-        // Sync and settings
-        const syncBtn = document.getElementById('syncBtn');
-        const settingsBtn = document.getElementById('settingsBtn');
-        const closeSettingsModal = document.getElementById('closeSettingsModal');
-        const testConnection = document.getElementById('testConnection');
-        const saveSettings = document.getElementById('saveSettings');
-        
-        if (syncBtn) syncBtn.addEventListener('click', (e) => { e.preventDefault(); this.manualSync(); });
-        if (settingsBtn) {
-            settingsBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('Settings button clicked');
-                this.openSettings();
-            });
-        }
-        if (closeSettingsModal) closeSettingsModal.addEventListener('click', (e) => { e.preventDefault(); this.closeSettings(); });
-        if (testConnection) testConnection.addEventListener('click', (e) => { e.preventDefault(); this.testGitHubConnection(); });
-        if (saveSettings) saveSettings.addEventListener('click', (e) => { e.preventDefault(); this.saveGitHubSettings(); });
-        
-        // Export/Import
-        const exportBtn = document.getElementById('exportBtn');
-        const importBtn = document.getElementById('importBtn');
-        
-        if (exportBtn) exportBtn.addEventListener('click', (e) => { e.preventDefault(); this.openExportModal(); });
-        if (importBtn) importBtn.addEventListener('click', (e) => { e.preventDefault(); this.openImportModal(); });
-        
-        // Modal controls
-        const closeModal = document.getElementById('closeModal');
-        const closeEntryView = document.getElementById('closeEntryView');
-        const closeExportModal = document.getElementById('closeExportModal');
-        const closeImportModal = document.getElementById('closeImportModal');
-        const saveEntry = document.getElementById('saveEntry');
-        
-        if (closeModal) closeModal.addEventListener('click', (e) => { e.preventDefault(); this.closeModal(); });
-        if (closeEntryView) closeEntryView.addEventListener('click', (e) => { e.preventDefault(); this.closeEntryViewModal(); });
-        if (closeExportModal) closeExportModal.addEventListener('click', (e) => { e.preventDefault(); this.closeExportModal(); });
-        if (closeImportModal) closeImportModal.addEventListener('click', (e) => { e.preventDefault(); this.closeImportModal(); });
-        if (saveEntry) saveEntry.addEventListener('click', (e) => { e.preventDefault(); this.saveEntry(); });
-        
-        // Export buttons
-        const exportJSON = document.getElementById('exportJSON');
-        const exportCSV = document.getElementById('exportCSV');
-        
-        if (exportJSON) exportJSON.addEventListener('click', (e) => { e.preventDefault(); this.exportData('json'); });
-        if (exportCSV) exportCSV.addEventListener('click', (e) => { e.preventDefault(); this.exportData('csv'); });
-        
-        // Import
-        const executeImport = document.getElementById('executeImport');
-        if (executeImport) executeImport.addEventListener('click', (e) => { e.preventDefault(); this.executeImport(); });
-        
-        // Goals management
-        const addWeeklyGoal = document.getElementById('addWeeklyGoal');
-        const addMonthlyGoal = document.getElementById('addMonthlyGoal');
-        const addYearlyGoal = document.getElementById('addYearlyGoal');
-        
-        if (addWeeklyGoal) addWeeklyGoal.addEventListener('click', (e) => { e.preventDefault(); this.addGoal('weekly'); });
-        if (addMonthlyGoal) addMonthlyGoal.addEventListener('click', (e) => { e.preventDefault(); this.addGoal('monthly'); });
-        if (addYearlyGoal) addYearlyGoal.addEventListener('click', (e) => { e.preventDefault(); this.addGoal('yearly'); });
+        // Goals
+        document.getElementById('addWeeklyGoal')?.addEventListener('click', () => this.addGoal('weekly'));
+        document.getElementById('addMonthlyGoal')?.addEventListener('click', () => this.addGoal('monthly'));
+        document.getElementById('addYearlyGoal')?.addEventListener('click', () => this.addGoal('yearly'));
         
         // Goal input enter key
-        const newWeeklyGoal = document.getElementById('newWeeklyGoal');
-        const newMonthlyGoal = document.getElementById('newMonthlyGoal');
-        const newYearlyGoal = document.getElementById('newYearlyGoal');
+        document.getElementById('newWeeklyGoal')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.addGoal('weekly');
+        });
+        document.getElementById('newMonthlyGoal')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.addGoal('monthly');
+        });
+        document.getElementById('newYearlyGoal')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.addGoal('yearly');
+        });
         
-        if (newWeeklyGoal) {
-            newWeeklyGoal.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this.addGoal('weekly');
-                }
-            });
-        }
-        if (newMonthlyGoal) {
-            newMonthlyGoal.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this.addGoal('monthly');
-                }
-            });
-        }
-        if (newYearlyGoal) {
-            newYearlyGoal.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this.addGoal('yearly');
-                }
-            });
-        }
+        // Export/Import
+        document.getElementById('exportBtn')?.addEventListener('click', () => this.openExportModal());
+        document.getElementById('importBtn')?.addEventListener('click', () => this.openImportModal());
+        
+        // Modal controls
+        document.getElementById('closeModal')?.addEventListener('click', () => this.closeModal());
+        document.getElementById('closeEntryView')?.addEventListener('click', () => this.closeEntryViewModal());
+        document.getElementById('closeExportModal')?.addEventListener('click', () => this.closeExportModal());
+        document.getElementById('closeImportModal')?.addEventListener('click', () => this.closeImportModal());
+        document.getElementById('saveEntry')?.addEventListener('click', () => this.saveEntry());
+        
+        // Export buttons
+        document.getElementById('exportJSON')?.addEventListener('click', () => this.exportData('json'));
+        document.getElementById('exportCSV')?.addEventListener('click', () => this.exportData('csv'));
+        
+        // Import
+        document.getElementById('executeImport')?.addEventListener('click', () => this.executeImport());
         
         // Habit management
-        const addHabit = document.getElementById('addHabit');
-        const newHabit = document.getElementById('newHabit');
-        
-        if (addHabit) addHabit.addEventListener('click', (e) => { e.preventDefault(); this.addCustomHabit(); });
-        if (newHabit) {
-            newHabit.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this.addCustomHabit();
-                }
-            });
-        }
+        document.getElementById('addHabit')?.addEventListener('click', () => this.addCustomHabit());
+        document.getElementById('newHabit')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.addCustomHabit();
+        });
         
         // Auto-save
-        const dailyText = document.getElementById('dailyText');
-        if (dailyText) dailyText.addEventListener('input', () => this.autoSave());
+        document.getElementById('dailyText')?.addEventListener('input', () => this.autoSave());
         
         // Modal background clicks
-        const dailyModal = document.getElementById('dailyModal');
-        const entryViewModal = document.getElementById('entryViewModal');
-        const exportModal = document.getElementById('exportModal');
-        const importModal = document.getElementById('importModal');
-        const settingsModal = document.getElementById('settingsModal');
-        
-        if (dailyModal) {
-            dailyModal.addEventListener('click', (e) => {
-                if (e.target.id === 'dailyModal') this.closeModal();
-            });
-        }
-        if (entryViewModal) {
-            entryViewModal.addEventListener('click', (e) => {
-                if (e.target.id === 'entryViewModal') this.closeEntryViewModal();
-            });
-        }
-        if (exportModal) {
-            exportModal.addEventListener('click', (e) => {
-                if (e.target.id === 'exportModal') this.closeExportModal();
-            });
-        }
-        if (importModal) {
-            importModal.addEventListener('click', (e) => {
-                if (e.target.id === 'importModal') this.closeImportModal();
-            });
-        }
-        if (settingsModal) {
-            settingsModal.addEventListener('click', (e) => {
-                if (e.target.id === 'settingsModal') this.closeSettings();
-            });
-        }
-        
-        console.log('Event listeners setup complete');
+        document.getElementById('dailyModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'dailyModal') this.closeModal();
+        });
+        document.getElementById('entryViewModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'entryViewModal') this.closeEntryViewModal();
+        });
+        document.getElementById('exportModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'exportModal') this.closeExportModal();
+        });
+        document.getElementById('importModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'importModal') this.closeImportModal();
+        });
+        document.getElementById('syncSetupModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'syncSetupModal') this.closeSyncSetupModal();
+        });
     }
     
     switchView(view) {
@@ -360,34 +644,50 @@ class DailyTracker {
         const activeTab = document.getElementById(`${view}Tab`);
         if (activeTab) {
             activeTab.classList.add('tab-btn--active');
-            console.log(`Activated tab: ${view}Tab`);
         }
         
-        // Hide all views
-        const allViews = document.querySelectorAll('.main-view');
-        console.log('Found views:', allViews.length);
-        allViews.forEach(viewEl => {
-            if (viewEl) {
-                viewEl.classList.add('hidden');
-                console.log('Hidden view:', viewEl.id);
-            }
+        // Hide all main views
+        document.querySelectorAll('.main-view').forEach(viewEl => {
+            viewEl.classList.add('hidden');
         });
         
         // Show selected view
         const targetView = document.getElementById(`${view}View`);
         if (targetView) {
             targetView.classList.remove('hidden');
-            console.log(`Showed view: ${view}View`);
-        } else {
-            console.error(`Target view not found: ${view}View`);
         }
         
         this.currentView = view;
         this.renderCurrentView();
     }
+
+    switchGoalsView(view) {
+        console.log('Switching to goals view:', view);
+        
+        // Update active goals tab
+        document.querySelectorAll('.goals-tab-btn').forEach(btn => btn.classList.remove('goals-tab-btn--active'));
+        const activeTab = document.getElementById(`${view}GoalsTab`);
+        if (activeTab) {
+            activeTab.classList.add('goals-tab-btn--active');
+        }
+        
+        // Hide all goal sections
+        document.querySelectorAll('.goals-section').forEach(section => {
+            section.classList.add('hidden');
+        });
+        
+        // Show selected section
+        const targetSection = document.getElementById(`${view}GoalsSection`);
+        if (targetSection) {
+            targetSection.classList.remove('hidden');
+        }
+        
+        this.currentGoalsView = view;
+        this.renderGoals();
+    }
     
     renderCurrentView() {
-        console.log('Rendering view:', this.currentView);
+        console.log('Rendering current view:', this.currentView);
         
         switch(this.currentView) {
             case 'weekly':
@@ -400,342 +700,209 @@ class DailyTracker {
                 break;
             case 'goals':
                 this.renderGoals();
+                this.updateSyncSetupVisibility();
                 break;
         }
     }
-    
-    // Goals Management
+
     renderGoals() {
-        console.log('Rendering goals view');
-        this.renderGoalSection('weekly');
-        this.renderGoalSection('monthly');
-        this.renderGoalSection('yearly');
+        console.log('Rendering goals, current goals view:', this.currentGoalsView);
+        this.renderWeeklyGoals();
+        this.renderMonthlyGoals();
+        this.renderYearlyGoals();
     }
 
-    renderGoalSection(type) {
-        const goalsList = document.getElementById(`${type}GoalsList`);
-        const progressElement = document.getElementById(`${type}Progress`);
+    renderWeeklyGoals() {
+        const key = this.getCurrentWeekKey();
+        const goals = this.goals.weekly[key] || [];
+        const progress = this.calculateProgress(goals);
+
+        // Update progress
+        const progressBar = document.getElementById('weeklyProgress');
+        const progressText = document.getElementById('weeklyProgressText');
         
-        console.log(`Rendering ${type} goals. List element:`, goalsList, 'Progress element:', progressElement);
-        
-        if (!goalsList || !progressElement) {
-            console.log(`Missing elements for ${type} goals`);
-            return;
+        if (progressBar && progressText) {
+            progressBar.style.width = `${progress.percentage}%`;
+            progressText.textContent = `${progress.completed}/${progress.total} completed (${progress.percentage}%)`;
         }
+
+        // Render goals list
+        const goalsList = document.getElementById('weeklyGoalsList');
+        if (!goalsList) return;
 
         goalsList.innerHTML = '';
-        const goals = this.goals[type] || [];
-        const completedCount = goals.filter(goal => goal.completed).length;
-        
-        // Update progress
-        progressElement.textContent = `${completedCount}/${goals.length} completed`;
-        
         goals.forEach(goal => {
-            const goalItem = document.createElement('div');
-            goalItem.className = `goal-item ${goal.completed ? 'completed' : ''}`;
-            
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.className = 'goal-checkbox';
-            checkbox.checked = goal.completed;
-            checkbox.addEventListener('change', (e) => {
-                e.stopPropagation();
-                this.toggleGoal(type, goal.id);
-            });
-            
-            const text = document.createElement('div');
-            text.className = 'goal-text';
-            text.textContent = goal.text;
-            text.addEventListener('click', (e) => {
-                e.stopPropagation();
-                checkbox.checked = !checkbox.checked;
-                this.toggleGoal(type, goal.id);
-            });
-            
-            const removeBtn = document.createElement('button');
-            removeBtn.className = 'goal-remove';
-            removeBtn.innerHTML = '×';
-            removeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.removeGoal(type, goal.id);
-            });
-            
-            goalItem.appendChild(checkbox);
-            goalItem.appendChild(text);
-            goalItem.appendChild(removeBtn);
-            goalsList.appendChild(goalItem);
+            const goalElement = this.createGoalElement(goal, 'weekly', key);
+            goalsList.appendChild(goalElement);
         });
-        
-        console.log(`Rendered ${goals.length} ${type} goals`);
     }
 
-    addGoal(type) {
-        const input = document.getElementById(`new${type.charAt(0).toUpperCase() + type.slice(1)}Goal`);
-        if (!input) return;
+    renderMonthlyGoals() {
+        const key = this.getCurrentMonthKey();
+        const goals = this.goals.monthly[key] || [];
+        const progress = this.calculateProgress(goals);
+
+        // Update progress
+        const progressBar = document.getElementById('monthlyProgress');
+        const progressText = document.getElementById('monthlyProgressText');
         
-        const goalText = input.value.trim();
-        if (!goalText) return;
-        
-        const newGoal = {
-            id: `${type.charAt(0)}${Date.now()}`,
-            text: goalText,
-            completed: false
-        };
-        
-        if (!this.goals[type]) {
-            this.goals[type] = [];
+        if (progressBar && progressText) {
+            progressBar.style.width = `${progress.percentage}%`;
+            progressText.textContent = `${progress.completed}/${progress.total} completed (${progress.percentage}%)`;
         }
-        
-        this.goals[type].push(newGoal);
-        input.value = '';
-        this.saveData();
-        this.renderGoalSection(type);
-        this.showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} goal added!`, 'success');
+
+        // Render goals list
+        const goalsList = document.getElementById('monthlyGoalsList');
+        if (!goalsList) return;
+
+        goalsList.innerHTML = '';
+        goals.forEach(goal => {
+            const goalElement = this.createGoalElement(goal, 'monthly', key);
+            goalsList.appendChild(goalElement);
+        });
     }
 
-    toggleGoal(type, goalId) {
-        const goal = this.goals[type].find(g => g.id === goalId);
-        if (goal) {
-            goal.completed = !goal.completed;
-            this.saveData();
-            this.renderGoalSection(type);
-            
-            const status = goal.completed ? 'completed' : 'uncompleted';
-            this.showToast(`Goal ${status}!`, 'success');
+    renderYearlyGoals() {
+        const key = this.getCurrentYearKey();
+        const goals = this.goals.yearly[key] || [];
+        const progress = this.calculateProgress(goals);
+
+        // Update progress
+        const progressBar = document.getElementById('yearlyProgress');
+        const progressText = document.getElementById('yearlyProgressText');
+        
+        if (progressBar && progressText) {
+            progressBar.style.width = `${progress.percentage}%`;
+            progressText.textContent = `${progress.completed}/${progress.total} completed (${progress.percentage}%)`;
         }
+
+        // Render goals list
+        const goalsList = document.getElementById('yearlyGoalsList');
+        if (!goalsList) return;
+
+        goalsList.innerHTML = '';
+        goals.forEach(goal => {
+            const goalElement = this.createGoalElement(goal, 'yearly', key);
+            goalsList.appendChild(goalElement);
+        });
     }
 
-    removeGoal(type, goalId) {
-        this.goals[type] = this.goals[type].filter(g => g.id !== goalId);
-        this.saveData();
-        this.renderGoalSection(type);
-        this.showToast('Goal removed!', 'success');
-    }
+    createGoalElement(goal, period, key) {
+        const goalItem = document.createElement('div');
+        goalItem.className = `goal-item ${goal.completed ? 'completed' : ''}`;
 
-    // GitHub Gist Sync
-    loadGitHubSettings() {
-        const stored = localStorage.getItem('githubSyncSettings');
-        if (stored) {
-            this.githubSettings = { ...this.githubSettings, ...JSON.parse(stored) };
-            this.updateSyncUI();
-        }
-    }
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'goal-checkbox';
+        checkbox.checked = goal.completed;
+        checkbox.addEventListener('change', () => this.toggleGoal(period, key, goal.id));
 
-    saveGitHubSettings() {
-        const token = document.getElementById('githubToken')?.value.trim();
-        const gistId = document.getElementById('gistId')?.value.trim();
-        
-        if (!token) {
-            this.showToast('Please enter a GitHub Personal Access Token', 'error');
-            return;
-        }
-        
-        this.githubSettings.token = token;
-        this.githubSettings.gistId = gistId;
-        this.githubSettings.autoSync = true;
-        
-        localStorage.setItem('githubSyncSettings', JSON.stringify(this.githubSettings));
-        this.updateSyncUI();
-        this.setupAutoSync();
-        this.closeSettings();
-        this.showToast('GitHub sync settings saved!', 'success');
-    }
+        const goalContent = document.createElement('div');
+        goalContent.className = 'goal-content';
 
-    async testGitHubConnection() {
-        const token = document.getElementById('githubToken')?.value.trim();
-        
-        if (!token) {
-            this.showToast('Please enter a GitHub token first', 'error');
-            return;
-        }
-        
-        try {
-            const response = await fetch('https://api.github.com/user', {
-                headers: {
-                    'Authorization': `token ${token}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            });
-            
-            if (response.ok) {
-                const user = await response.json();
-                this.showToast(`Connected as ${user.login}!`, 'success');
-            } else {
-                this.showToast('Invalid token or connection failed', 'error');
+        const goalText = document.createElement('div');
+        goalText.className = 'goal-text';
+        goalText.textContent = goal.text;
+
+        const goalDate = document.createElement('div');
+        goalDate.className = 'goal-date';
+        goalDate.textContent = `Added: ${new Date(goal.dateAdded).toLocaleDateString()}`;
+
+        goalContent.appendChild(goalText);
+        goalContent.appendChild(goalDate);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'goal-remove';
+        removeBtn.textContent = '×';
+        removeBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to remove this goal?')) {
+                this.removeGoal(period, key, goal.id);
             }
-        } catch (error) {
-            this.showToast('Connection test failed', 'error');
-        }
+        });
+
+        goalItem.appendChild(checkbox);
+        goalItem.appendChild(goalContent);
+        goalItem.appendChild(removeBtn);
+
+        return goalItem;
     }
 
-    setupAutoSync() {
-        if (this.syncInterval) {
-            clearInterval(this.syncInterval);
-        }
+    // Sync Setup Methods
+    openSyncSetupModal() {
+        document.getElementById('syncSetupModal')?.classList.remove('hidden');
+    }
+
+    closeSyncSetupModal() {
+        document.getElementById('syncSetupModal')?.classList.add('hidden');
+    }
+
+    async testConnection() {
+        const tokenInput = document.getElementById('githubToken');
+        const resultDiv = document.getElementById('syncTestResult');
         
-        if (this.githubSettings.autoSync && this.githubSettings.token) {
-            this.syncInterval = setInterval(() => {
-                if (!this.syncInProgress) {
-                    this.syncToGist();
-                }
-            }, 30000); // Sync every 30 seconds
-        }
-    }
+        if (!tokenInput || !resultDiv) return;
 
-    debouncedSync = this.debounce(() => {
-        if (this.githubSettings.autoSync && !this.syncInProgress) {
-            this.syncToGist();
-        }
-    }, 2000);
-
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
-
-    async manualSync() {
-        if (!this.githubSettings.token) {
-            this.openSettings();
-            this.showToast('Please configure GitHub sync first', 'error');
+        const token = tokenInput.value.trim();
+        if (!token) {
+            this.showSyncTestResult('Please enter a GitHub token', 'error');
             return;
         }
+
+        this.showSyncTestResult('Testing connection...', 'info');
         
+        const result = await this.testGitHubConnection(token);
+        
+        if (result.success) {
+            this.showSyncTestResult(`✅ Connected as ${result.user.login}`, 'success');
+        } else {
+            this.showSyncTestResult(`❌ ${result.error}`, 'error');
+        }
+    }
+
+    showSyncTestResult(message, type) {
+        const resultDiv = document.getElementById('syncTestResult');
+        if (!resultDiv) return;
+
+        resultDiv.textContent = message;
+        resultDiv.className = `sync-test-result ${type}`;
+        resultDiv.classList.remove('hidden');
+    }
+
+    async enableSync() {
+        const tokenInput = document.getElementById('githubToken');
+        if (!tokenInput) return;
+
+        const token = tokenInput.value.trim();
+        if (!token) {
+            this.showToast('Please enter a GitHub token', 'error');
+            return;
+        }
+
+        // Test connection first
+        const testResult = await this.testGitHubConnection(token);
+        if (!testResult.success) {
+            this.showToast(`Connection failed: ${testResult.error}`, 'error');
+            return;
+        }
+
+        // Enable sync
+        this.syncConfig.enabled = true;
+        this.syncConfig.githubToken = token;
+        this.saveData();
+
+        // Update sync setup visibility and close modal
+        this.updateSyncSetupVisibility();
+        this.closeSyncSetupModal();
+
+        // Start auto-sync and perform initial sync
+        this.startAutoSync();
+        this.updateSyncStatus('syncing', 'Initial sync...');
         await this.syncToGist();
+
+        this.showToast('GitHub sync enabled successfully! 🎉', 'success');
     }
 
-    async syncToGist() {
-        if (this.syncInProgress) return;
-        
-        this.syncInProgress = true;
-        this.updateSyncStatus('Syncing...', 'syncing');
-        
-        try {
-            const data = {
-                entries: this.entries,
-                customHabits: this.customHabits,
-                habitColors: this.habitColors,
-                goals: this.goals,
-                syncTime: new Date().toISOString(),
-                version: "3.0.0"
-            };
-            
-            const gistData = {
-                description: "Daily Activity Tracker - Amit's Data",
-                public: false,
-                files: {
-                    "daily-tracker-data.json": {
-                        content: JSON.stringify(data, null, 2)
-                    }
-                }
-            };
-            
-            let response;
-            if (this.githubSettings.gistId) {
-                // Update existing gist
-                response = await fetch(`https://api.github.com/gists/${this.githubSettings.gistId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': `token ${this.githubSettings.token}`,
-                        'Accept': 'application/vnd.github.v3+json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(gistData)
-                });
-            } else {
-                // Create new gist
-                response = await fetch('https://api.github.com/gists', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `token ${this.githubSettings.token}`,
-                        'Accept': 'application/vnd.github.v3+json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(gistData)
-                });
-            }
-            
-            if (response.ok) {
-                const gist = await response.json();
-                if (!this.githubSettings.gistId) {
-                    this.githubSettings.gistId = gist.id;
-                    localStorage.setItem('githubSyncSettings', JSON.stringify(this.githubSettings));
-                }
-                
-                this.githubSettings.lastSync = new Date().toISOString();
-                localStorage.setItem('githubSyncSettings', JSON.stringify(this.githubSettings));
-                
-                this.updateSyncStatus('Synced successfully', 'success');
-                this.updateSyncUI();
-            } else {
-                throw new Error('Sync failed');
-            }
-        } catch (error) {
-            console.error('Sync error:', error);
-            this.updateSyncStatus('Sync failed', 'error');
-        } finally {
-            this.syncInProgress = false;
-            setTimeout(() => this.hideSyncStatus(), 3000);
-        }
-    }
-
-    updateSyncStatus(message, type) {
-        const statusElement = document.getElementById('syncStatus');
-        const textElement = document.getElementById('syncStatusText');
-        
-        if (statusElement && textElement) {
-            textElement.textContent = message;
-            statusElement.className = `sync-status ${type}`;
-            statusElement.classList.remove('hidden');
-        }
-    }
-
-    hideSyncStatus() {
-        const statusElement = document.getElementById('syncStatus');
-        if (statusElement) {
-            statusElement.classList.add('hidden');
-        }
-    }
-
-    updateSyncUI() {
-        const syncBtn = document.getElementById('syncBtn');
-        const syncIcon = document.getElementById('syncIcon');
-        const autoSyncStatus = document.getElementById('autoSyncStatus');
-        const lastSyncTime = document.getElementById('lastSyncTime');
-        
-        if (syncBtn && syncIcon) {
-            if (this.githubSettings.autoSync && this.githubSettings.token) {
-                syncBtn.classList.remove('btn--outline');
-                syncBtn.classList.add('btn--primary');
-                syncIcon.textContent = '☁️';
-            } else {
-                syncBtn.classList.add('btn--outline');
-                syncBtn.classList.remove('btn--primary');
-                syncIcon.textContent = '☁️';
-            }
-        }
-        
-        if (autoSyncStatus) {
-            autoSyncStatus.textContent = this.githubSettings.autoSync ? 'Enabled' : 'Disabled';
-        }
-        
-        if (lastSyncTime) {
-            if (this.githubSettings.lastSync) {
-                const syncDate = new Date(this.githubSettings.lastSync);
-                lastSyncTime.textContent = syncDate.toLocaleString();
-            } else {
-                lastSyncTime.textContent = 'Never';
-            }
-        }
-    }
-    
-    // Weekly Calendar Methods
+    // Weekly Calendar Methods (same as before but updated for NEET-PG)
     getWeekStart(date) {
         const d = new Date(date);
         const day = d.getDay();
@@ -796,7 +963,7 @@ class DailyTracker {
             const preview = document.createElement('div');
             preview.className = 'day-preview';
             const text = this.entries[dateString].text;
-            preview.textContent = text.length > 80 ? text.substring(0, 80) + '...' : text;
+            preview.textContent = text.length > 100 ? text.substring(0, 100) + '...' : text;
             preview.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.openEntryView(date);
@@ -824,10 +991,7 @@ class DailyTracker {
         }
         
         // Click handler
-        dayElement.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.openDayEntry(date);
-        });
+        dayElement.addEventListener('click', () => this.openDayEntry(date));
         
         return dayElement;
     }
@@ -916,10 +1080,7 @@ class DailyTracker {
         }
         
         // Click handler
-        dayElement.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.openDayEntry(date);
-        });
+        dayElement.addEventListener('click', () => this.openDayEntry(date));
         
         return dayElement;
     }
@@ -939,7 +1100,7 @@ class DailyTracker {
         const totalEntries = document.createElement('div');
         totalEntries.className = 'summary-stat';
         totalEntries.innerHTML = `
-            <span class="summary-label">Total Entries</span>
+            <span class="summary-label">Total Study Days</span>
             <span class="summary-value">${stats.totalEntries}</span>
         `;
         summaryContent.appendChild(totalEntries);
@@ -1065,17 +1226,14 @@ class DailyTracker {
         const dateString = this.formatDate(date);
         
         // Set modal title
-        const modalDate = document.getElementById('modalDate');
-        if (modalDate) modalDate.textContent = this.formatDateDisplay(date);
+        document.getElementById('modalDate').textContent = this.formatDateDisplay(date);
         
         // Load existing entry
         const entry = this.entries[dateString] || { text: '', habits: {} };
-        const dailyText = document.getElementById('dailyText');
-        if (dailyText) dailyText.value = entry.text || '';
+        document.getElementById('dailyText').value = entry.text || '';
         
         this.renderHabits(entry.habits || {});
-        const dailyModal = document.getElementById('dailyModal');
-        if (dailyModal) dailyModal.classList.remove('hidden');
+        document.getElementById('dailyModal').classList.remove('hidden');
     }
     
     openEntryView(date) {
@@ -1084,18 +1242,15 @@ class DailyTracker {
         
         if (!entry) return;
         
-        const entryViewDate = document.getElementById('entryViewDate');
-        if (entryViewDate) entryViewDate.textContent = `Entry for ${this.formatDateDisplay(date)}`;
+        document.getElementById('entryViewDate').textContent = `NEET-PG Entry for ${this.formatDateDisplay(date)}`;
         
         const content = document.getElementById('entryViewContent');
-        if (!content) return;
-        
         content.innerHTML = '';
         
         // Full text
         if (entry.text) {
             const textSection = document.createElement('div');
-            textSection.innerHTML = '<h4>Daily Entry</h4>';
+            textSection.innerHTML = '<h4>Daily NEET-PG Study Log</h4>';
             
             const textContent = document.createElement('div');
             textContent.className = 'entry-full-text';
@@ -1108,7 +1263,7 @@ class DailyTracker {
         // Habits
         if (entry.habits) {
             const habitsSection = document.createElement('div');
-            habitsSection.innerHTML = '<h4>Habits</h4>';
+            habitsSection.innerHTML = '<h4>NEET-PG Habits</h4>';
             
             const habitsList = document.createElement('div');
             habitsList.className = 'entry-habits-list';
@@ -1137,8 +1292,7 @@ class DailyTracker {
             content.appendChild(habitsSection);
         }
         
-        const entryViewModal = document.getElementById('entryViewModal');
-        if (entryViewModal) entryViewModal.classList.remove('hidden');
+        document.getElementById('entryViewModal').classList.remove('hidden');
     }
     
     renderHabits(completedHabits = {}) {
@@ -1157,18 +1311,12 @@ class DailyTracker {
             checkbox.className = 'habit-checkbox';
             checkbox.id = `habit-${index}`;
             checkbox.checked = completedHabits[habit] || false;
-            checkbox.addEventListener('change', (e) => {
-                e.stopPropagation();
-                this.autoSave();
-            });
+            checkbox.addEventListener('change', () => this.autoSave());
             
             const label = document.createElement('label');
             label.className = 'habit-label';
             label.setAttribute('for', `habit-${index}`);
             label.textContent = habit;
-            label.addEventListener('click', (e) => {
-                e.stopPropagation();
-            });
             
             habitItem.appendChild(checkbox);
             habitItem.appendChild(label);
@@ -1246,8 +1394,7 @@ class DailyTracker {
         if (!this.selectedDate) return;
         
         const dateString = this.formatDate(this.selectedDate);
-        const dailyText = document.getElementById('dailyText');
-        const text = dailyText ? dailyText.value || '' : '';
+        const text = document.getElementById('dailyText')?.value || '';
         
         const habits = {};
         const allHabits = this.getAllHabits();
@@ -1271,62 +1418,33 @@ class DailyTracker {
         this.saveCurrentEntry();
         this.closeModal();
         this.renderCurrentView();
-        this.showToast('Entry saved successfully!', 'success');
+        this.showToast('NEET-PG entry saved successfully! 🎯', 'success');
     }
     
     // Modal Management
     closeModal() {
-        const dailyModal = document.getElementById('dailyModal');
-        if (dailyModal) dailyModal.classList.add('hidden');
+        document.getElementById('dailyModal')?.classList.add('hidden');
         this.selectedDate = null;
     }
     
     closeEntryViewModal() {
-        const entryViewModal = document.getElementById('entryViewModal');
-        if (entryViewModal) entryViewModal.classList.add('hidden');
-    }
-    
-    openSettings() {
-        console.log('Opening settings modal');
-        // Populate settings form
-        const githubToken = document.getElementById('githubToken');
-        const gistId = document.getElementById('gistId');
-        
-        if (githubToken) githubToken.value = this.githubSettings.token || '';
-        if (gistId) gistId.value = this.githubSettings.gistId || '';
-        
-        const settingsModal = document.getElementById('settingsModal');
-        if (settingsModal) {
-            settingsModal.classList.remove('hidden');
-            console.log('Settings modal opened');
-        } else {
-            console.error('Settings modal not found');
-        }
-    }
-
-    closeSettings() {
-        const settingsModal = document.getElementById('settingsModal');
-        if (settingsModal) settingsModal.classList.add('hidden');
+        document.getElementById('entryViewModal')?.classList.add('hidden');
     }
     
     openExportModal() {
-        const exportModal = document.getElementById('exportModal');
-        if (exportModal) exportModal.classList.remove('hidden');
+        document.getElementById('exportModal')?.classList.remove('hidden');
     }
     
     closeExportModal() {
-        const exportModal = document.getElementById('exportModal');
-        if (exportModal) exportModal.classList.add('hidden');
+        document.getElementById('exportModal')?.classList.add('hidden');
     }
     
     openImportModal() {
-        const importModal = document.getElementById('importModal');
-        if (importModal) importModal.classList.remove('hidden');
+        document.getElementById('importModal')?.classList.remove('hidden');
     }
     
     closeImportModal() {
-        const importModal = document.getElementById('importModal');
-        if (importModal) importModal.classList.add('hidden');
+        document.getElementById('importModal')?.classList.add('hidden');
     }
     
     // Export/Import Methods
@@ -1336,6 +1454,7 @@ class DailyTracker {
             customHabits: this.customHabits,
             habitColors: this.habitColors,
             goals: this.goals,
+            syncConfig: { ...this.syncConfig, githubToken: null }, // Don't export token
             exportDate: new Date().toISOString(),
             version: "3.0.0"
         };
@@ -1345,20 +1464,20 @@ class DailyTracker {
         if (format === 'json') {
             this.downloadFile(
                 JSON.stringify(data, null, 2),
-                `daily-tracker-export-${timestamp}.json`,
+                `neetpg-tracker-export-${timestamp}.json`,
                 'application/json'
             );
         } else if (format === 'csv') {
             const csv = this.convertToCSV(data);
             this.downloadFile(
                 csv,
-                `daily-tracker-export-${timestamp}.csv`,
+                `neetpg-tracker-export-${timestamp}.csv`,
                 'text/csv'
             );
         }
         
         this.closeExportModal();
-        this.showToast(`Data exported as ${format.toUpperCase()}!`, 'success');
+        this.showToast(`NEET-PG data exported as ${format.toUpperCase()}! 📊`, 'success');
     }
     
     convertToCSV(data) {
@@ -1399,7 +1518,7 @@ class DailyTracker {
         const fileInput = document.getElementById('importFile');
         const mode = document.querySelector('input[name="importMode"]:checked')?.value || 'merge';
         
-        if (!fileInput || !fileInput.files.length) {
+        if (!fileInput.files.length) {
             this.showToast('Please select a file to import.', 'error');
             return;
         }
@@ -1423,14 +1542,16 @@ class DailyTracker {
                     this.entries = importedData.entries || {};
                     this.customHabits = importedData.customHabits || [];
                     this.habitColors = { ...this.habitColors, ...(importedData.habitColors || {}) };
-                    this.goals = importedData.goals || this.getDefaultGoals();
+                    this.goals = importedData.goals || { weekly: {}, monthly: {}, yearly: {} };
                 } else {
                     // Merge mode
                     Object.assign(this.entries, importedData.entries || {});
                     this.customHabits = [...new Set([...this.customHabits, ...(importedData.customHabits || [])])];
                     Object.assign(this.habitColors, importedData.habitColors || {});
                     if (importedData.goals) {
-                        Object.assign(this.goals, importedData.goals);
+                        Object.assign(this.goals.weekly, importedData.goals.weekly || {});
+                        Object.assign(this.goals.monthly, importedData.goals.monthly || {});
+                        Object.assign(this.goals.yearly, importedData.goals.yearly || {});
                     }
                 }
                 
@@ -1438,7 +1559,7 @@ class DailyTracker {
                 this.renderCurrentView();
                 this.renderHabitLegend();
                 this.closeImportModal();
-                this.showToast('Data imported successfully!', 'success');
+                this.showToast('NEET-PG data imported successfully! 🎉', 'success');
                 
             } catch (error) {
                 this.showToast('Error importing data. Please check the file format.', 'error');
@@ -1479,6 +1600,6 @@ class DailyTracker {
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing Enhanced Daily Tracker with Goals and Sync...');
-    new DailyTracker();
+    console.log('DOM loaded, initializing Enhanced NEET-PG Tracker...');
+    new NEETPGTracker();
 });

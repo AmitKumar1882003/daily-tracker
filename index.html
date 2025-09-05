@@ -3,40 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Activity Tracker - Amit</title>
+    <title>Amit's NEET-PG Tracker</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <header class="app-header">
             <div class="header-main">
-                <h1>Daily Activity Tracker</h1>
-                <div class="greeting">Hi Amit! 🩺</div>
+                <h1>Hi Amit! 💪</h1>
+                <div class="motivational-quote">
+                    <p id="motivationalQuote">"Success is not final, failure is not fatal: it is the courage to continue that counts." - NEET-PG Journey</p>
+                </div>
             </div>
             <div class="header-controls">
-                <button id="syncBtn" class="btn btn--primary btn--sm">
-                    <span id="syncIcon">☁️</span>
-                    <span id="syncText">Sync</span>
-                </button>
+                <div class="sync-status" id="syncStatus">
+                    <span class="sync-indicator" id="syncIndicator"></span>
+                    <span class="sync-text" id="syncText">Offline</span>
+                    <button id="manualSync" class="btn btn--outline btn--sm">Sync</button>
+                </div>
                 <button id="todayBtn" class="btn btn--secondary btn--sm">Today</button>
                 <button id="exportBtn" class="btn btn--outline btn--sm">Export</button>
                 <button id="importBtn" class="btn btn--outline btn--sm">Import</button>
-                <button id="settingsBtn" class="btn btn--outline btn--sm">⚙️</button>
             </div>
         </header>
-
-        <!-- Motivational Quote Section -->
-        <div class="quote-section">
-            <div class="quote-content">
-                <div id="motivationalQuote" class="quote-text">"Success is the sum of small efforts repeated day in and day out."</div>
-                <div class="quote-author">— Daily Motivation</div>
-            </div>
-        </div>
-
-        <!-- Sync Status -->
-        <div id="syncStatus" class="sync-status hidden">
-            <span id="syncStatusText">Syncing...</span>
-        </div>
 
         <!-- Navigation Tabs -->
         <nav class="view-tabs">
@@ -69,7 +58,7 @@
 
             <!-- Habit Legend -->
             <div class="habit-legend">
-                <h3>Habit Colors</h3>
+                <h3>NEET-PG Habit Colors</h3>
                 <div id="habitColors" class="habit-colors-list">
                     <!-- Habit colors will be populated by JavaScript -->
                 </div>
@@ -107,56 +96,83 @@
             </div>
         </main>
 
-        <!-- Goals View -->
+        <!-- Enhanced Goals View -->
         <main id="goalsView" class="main-view hidden">
-            <div class="goals-section">
-                <!-- Weekly Goals -->
-                <div class="goal-card">
-                    <div class="goal-header">
-                        <h3>Weekly Goals</h3>
-                        <div class="goal-progress">
-                            <span id="weeklyProgress">0/0 completed</span>
+            <!-- Sync Setup Card -->
+            <div class="sync-setup-card" id="syncSetupCard">
+                <h3>🔄 GitHub Gist Sync Setup</h3>
+                <p>Enable cloud sync to access your data across devices. Your data will be stored in a private GitHub Gist.</p>
+                <button id="setupSync" class="btn btn--primary">Setup Cloud Sync</button>
+            </div>
+
+            <!-- Goals Navigation -->
+            <div class="goals-nav">
+                <button id="weeklyGoalsTab" class="goals-tab-btn goals-tab-btn--active">Weekly Goals</button>
+                <button id="monthlyGoalsTab" class="goals-tab-btn">Monthly Goals</button>
+                <button id="yearlyGoalsTab" class="goals-tab-btn">Yearly Goals</button>
+            </div>
+
+            <!-- Weekly Goals -->
+            <div id="weeklyGoalsSection" class="goals-section">
+                <div class="goals-card">
+                    <div class="goals-header">
+                        <h3>Weekly Goals (Week 36, 2025)</h3>
+                        <div class="progress-indicator">
+                            <div class="progress-bar">
+                                <div id="weeklyProgress" class="progress-fill" style="width: 20%"></div>
+                            </div>
+                            <span id="weeklyProgressText">1/5 completed (20%)</span>
                         </div>
                     </div>
-                    <div class="goal-list" id="weeklyGoalsList">
-                        <!-- Weekly goals will be populated by JavaScript -->
+                    <div class="goals-list" id="weeklyGoalsList">
+                        <!-- Goals will be populated by JavaScript -->
                     </div>
-                    <div class="goal-actions">
-                        <input type="text" id="newWeeklyGoal" class="form-control" placeholder="Add new weekly goal...">
+                    <div class="add-goal-section">
+                        <input type="text" id="newWeeklyGoal" class="form-control" placeholder="Add a new weekly goal...">
                         <button id="addWeeklyGoal" class="btn btn--primary btn--sm">Add Goal</button>
                     </div>
                 </div>
+            </div>
 
-                <!-- Monthly Goals -->
-                <div class="goal-card">
-                    <div class="goal-header">
-                        <h3>Monthly Goals</h3>
-                        <div class="goal-progress">
-                            <span id="monthlyProgress">0/0 completed</span>
+            <!-- Monthly Goals -->
+            <div id="monthlyGoalsSection" class="goals-section hidden">
+                <div class="goals-card">
+                    <div class="goals-header">
+                        <h3>Monthly Goals (September 2025)</h3>
+                        <div class="progress-indicator">
+                            <div class="progress-bar">
+                                <div id="monthlyProgress" class="progress-fill" style="width: 0%"></div>
+                            </div>
+                            <span id="monthlyProgressText">0/5 completed (0%)</span>
                         </div>
                     </div>
-                    <div class="goal-list" id="monthlyGoalsList">
-                        <!-- Monthly goals will be populated by JavaScript -->
+                    <div class="goals-list" id="monthlyGoalsList">
+                        <!-- Goals will be populated by JavaScript -->
                     </div>
-                    <div class="goal-actions">
-                        <input type="text" id="newMonthlyGoal" class="form-control" placeholder="Add new monthly goal...">
+                    <div class="add-goal-section">
+                        <input type="text" id="newMonthlyGoal" class="form-control" placeholder="Add a new monthly goal...">
                         <button id="addMonthlyGoal" class="btn btn--primary btn--sm">Add Goal</button>
                     </div>
                 </div>
+            </div>
 
-                <!-- Yearly Goals -->
-                <div class="goal-card">
-                    <div class="goal-header">
-                        <h3>Yearly Goals</h3>
-                        <div class="goal-progress">
-                            <span id="yearlyProgress">0/0 completed</span>
+            <!-- Yearly Goals -->
+            <div id="yearlyGoalsSection" class="goals-section hidden">
+                <div class="goals-card">
+                    <div class="goals-header">
+                        <h3>Yearly Goals (2025)</h3>
+                        <div class="progress-indicator">
+                            <div class="progress-bar">
+                                <div id="yearlyProgress" class="progress-fill" style="width: 0%"></div>
+                            </div>
+                            <span id="yearlyProgressText">0/6 completed (0%)</span>
                         </div>
                     </div>
-                    <div class="goal-list" id="yearlyGoalsList">
-                        <!-- Yearly goals will be populated by JavaScript -->
+                    <div class="goals-list" id="yearlyGoalsList">
+                        <!-- Goals will be populated by JavaScript -->
                     </div>
-                    <div class="goal-actions">
-                        <input type="text" id="newYearlyGoal" class="form-control" placeholder="Add new yearly goal...">
+                    <div class="add-goal-section">
+                        <input type="text" id="newYearlyGoal" class="form-control" placeholder="Add a new yearly goal...">
                         <button id="addYearlyGoal" class="btn btn--primary btn--sm">Add Goal</button>
                     </div>
                 </div>
@@ -177,11 +193,11 @@
                     <label class="form-label">What did you do today?</label>
                     <textarea id="dailyText" class="form-control daily-textarea" 
                               rows="8" 
-                              placeholder="Write about your day here..."></textarea>
+                              placeholder="Write about your NEET-PG preparation today..."></textarea>
                 </div>
 
                 <div class="habits-section">
-                    <h4>Daily Habits</h4>
+                    <h4>Daily NEET-PG Habits</h4>
                     <div id="habitsList" class="habits-list">
                         <!-- Habits will be populated by JavaScript -->
                     </div>
@@ -202,49 +218,6 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Settings</h3>
-                <button id="closeSettingsModal" class="btn btn--outline btn--sm">Close</button>
-            </div>
-            
-            <div class="modal-body">
-                <div class="settings-section">
-                    <h4>GitHub Gist Sync</h4>
-                    <div class="form-group">
-                        <label class="form-label">Personal Access Token</label>
-                        <input type="password" id="githubToken" class="form-control" 
-                               placeholder="Enter your GitHub Personal Access Token">
-                        <div class="help-text">
-                            <a href="https://github.com/settings/tokens" target="_blank">Create a new token</a> with 'gist' scope
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Gist ID (optional)</label>
-                        <input type="text" id="gistId" class="form-control" 
-                               placeholder="Leave empty to create new gist">
-                    </div>
-                    <div class="sync-controls">
-                        <button id="testConnection" class="btn btn--secondary">Test Connection</button>
-                        <button id="saveSettings" class="btn btn--primary">Save Settings</button>
-                    </div>
-                    <div class="sync-info">
-                        <div class="status-item">
-                            <span>Auto-sync:</span>
-                            <span id="autoSyncStatus">Disabled</span>
-                        </div>
-                        <div class="status-item">
-                            <span>Last sync:</span>
-                            <span id="lastSyncTime">Never</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Full Entry View Modal -->
     <div id="entryViewModal" class="modal hidden">
         <div class="modal-content modal-content--large">
@@ -256,6 +229,51 @@
             <div class="modal-body">
                 <div id="entryViewContent" class="entry-view-content">
                     <!-- Full entry content will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GitHub Sync Setup Modal -->
+    <div id="syncSetupModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔄 Setup GitHub Gist Sync</h3>
+                <button id="closeSyncSetup" class="btn btn--outline btn--sm">Close</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="sync-setup-content">
+                    <div class="setup-step">
+                        <h4>Step 1: Create GitHub Personal Access Token</h4>
+                        <ol class="setup-instructions">
+                            <li>Go to <a href="https://github.com/settings/tokens" target="_blank">GitHub Settings → Personal Access Tokens</a></li>
+                            <li>Click "Generate new token (classic)"</li>
+                            <li>Give it a name like "NEET-PG Tracker"</li>
+                            <li>Select scopes: <strong>gist</strong> (for creating private gists)</li>
+                            <li>Set expiration to "No expiration" (or your preference)</li>
+                            <li>Click "Generate token" and copy the token</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="setup-step">
+                        <h4>Step 2: Enter Your Token</h4>
+                        <div class="form-group">
+                            <label class="form-label">GitHub Personal Access Token</label>
+                            <input type="password" id="githubToken" class="form-control" 
+                                   placeholder="ghp_xxxxxxxxxxxx...">
+                            <small class="form-text">Your token is stored locally and never shared</small>
+                        </div>
+                        
+                        <div class="sync-actions">
+                            <button id="testConnection" class="btn btn--secondary">Test Connection</button>
+                            <button id="enableSync" class="btn btn--primary">Enable Sync</button>
+                        </div>
+                    </div>
+
+                    <div id="syncTestResult" class="sync-test-result hidden">
+                        <!-- Test results will be shown here -->
+                    </div>
                 </div>
             </div>
         </div>
