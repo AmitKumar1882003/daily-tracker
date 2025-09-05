@@ -3,43 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Amit's NEET-PG Tracker</title>
+    <title>Daily Activity Tracker - Amit's Productivity Hub</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
+        <!-- Greeting Header -->
         <header class="app-header">
-            <div class="header-main">
-                <h1>Hi Amit! 💪</h1>
+            <div class="header-left">
+                <h1>✨ Welcome back, Amit!</h1>
                 <div class="motivational-quote">
-                    <p id="motivationalQuote">"Success is not final, failure is not fatal: it is the courage to continue that counts." - NEET-PG Journey</p>
+                    <p id="dailyQuote" class="quote-text"></p>
+                    <span id="quoteAuthor" class="quote-author"></span>
                 </div>
             </div>
             <div class="header-controls">
-                <div class="sync-status" id="syncStatus">
-                    <span class="sync-indicator" id="syncIndicator"></span>
-                    <span class="sync-text" id="syncText">Offline</span>
-                    <button id="manualSync" class="btn btn--outline btn--sm">Sync</button>
+                <div class="sync-status">
+                    <span id="syncStatus" class="sync-indicator">⚡ Offline</span>
+                    <button id="syncBtn" class="btn btn--outline btn--sm">🔄 Sync</button>
                 </div>
-                <button id="todayBtn" class="btn btn--secondary btn--sm">Today</button>
-                <button id="exportBtn" class="btn btn--outline btn--sm">Export</button>
-                <button id="importBtn" class="btn btn--outline btn--sm">Import</button>
+                <button id="todayBtn" class="btn btn--secondary btn--sm">📅 Today</button>
+                <button id="jumpToBtn" class="btn btn--outline btn--sm">🎯 Jump To</button>
+                <button id="exportBtn" class="btn btn--outline btn--sm">📤 Export</button>
+                <button id="helpBtn" class="btn btn--outline btn--sm">❓ Help</button>
             </div>
         </header>
 
         <!-- Navigation Tabs -->
         <nav class="view-tabs">
-            <button id="weeklyTab" class="tab-btn tab-btn--active">Weekly</button>
-            <button id="monthlyTab" class="tab-btn">Monthly</button>
-            <button id="goalsTab" class="tab-btn">Goals</button>
+            <button id="weeklyTab" class="tab-btn tab-btn--active">📊 Weekly</button>
+            <button id="monthlyTab" class="tab-btn">📅 Monthly</button>
+            <button id="yearlyTab" class="tab-btn">🗓️ Yearly</button>
+            <button id="goalsTab" class="tab-btn">🎯 Goals</button>
         </nav>
 
         <!-- Weekly Calendar View -->
         <main id="weeklyView" class="main-view">
             <div class="calendar-header">
-                <button id="prevWeek" class="btn btn--outline btn--sm">&larr; Prev</button>
-                <h2 id="weekRange">September 1-7, 2025</h2>
-                <button id="nextWeek" class="btn btn--outline btn--sm">Next &rarr;</button>
+                <button id="prevWeek" class="btn btn--outline btn--sm">← Prev Week</button>
+                <div class="week-info">
+                    <h2 id="weekRange">September 1-7, 2025</h2>
+                    <div class="week-stats">
+                        <span id="weekScore" class="week-score">Score: 85%</span>
+                        <span id="weekStreak" class="week-streak">🔥 Streak: 5 days</span>
+                    </div>
+                </div>
+                <button id="nextWeek" class="btn btn--outline btn--sm">Next Week →</button>
             </div>
 
             <div class="calendar-grid">
@@ -58,7 +67,7 @@
 
             <!-- Habit Legend -->
             <div class="habit-legend">
-                <h3>NEET-PG Habit Colors</h3>
+                <h3>📈 Habit Legend</h3>
                 <div id="habitColors" class="habit-colors-list">
                     <!-- Habit colors will be populated by JavaScript -->
                 </div>
@@ -68,9 +77,15 @@
         <!-- Monthly Calendar View -->
         <main id="monthlyView" class="main-view hidden">
             <div class="calendar-header">
-                <button id="prevMonth" class="btn btn--outline btn--sm">&larr; Prev</button>
-                <h2 id="monthYear">September 2025</h2>
-                <button id="nextMonth" class="btn btn--outline btn--sm">Next &rarr;</button>
+                <button id="prevMonth" class="btn btn--outline btn--sm">← Prev Month</button>
+                <div class="month-info">
+                    <h2 id="monthYear">September 2025</h2>
+                    <div class="month-stats">
+                        <span id="monthEntries" class="month-stat">📝 12 entries</span>
+                        <span id="monthStreak" class="month-stat">🔥 Best streak: 8 days</span>
+                    </div>
+                </div>
+                <button id="nextMonth" class="btn btn--outline btn--sm">Next Month →</button>
             </div>
 
             <div class="monthly-calendar">
@@ -89,91 +104,109 @@
 
             <!-- Monthly Summary -->
             <div class="monthly-summary">
-                <h3>Month Summary</h3>
+                <h3>📊 Monthly Summary</h3>
                 <div id="monthlySummaryContent" class="summary-content">
                     <!-- Monthly summary will be populated by JavaScript -->
                 </div>
             </div>
         </main>
 
-        <!-- Enhanced Goals View -->
-        <main id="goalsView" class="main-view hidden">
-            <!-- Sync Setup Card -->
-            <div class="sync-setup-card" id="syncSetupCard">
-                <h3>🔄 GitHub Gist Sync Setup</h3>
-                <p>Enable cloud sync to access your data across devices. Your data will be stored in a private GitHub Gist.</p>
-                <button id="setupSync" class="btn btn--primary">Setup Cloud Sync</button>
+        <!-- Yearly Calendar View -->
+        <main id="yearlyView" class="main-view hidden">
+            <div class="calendar-header">
+                <button id="prevYear" class="btn btn--outline btn--sm">← Prev Year</button>
+                <div class="year-info">
+                    <h2 id="yearTitle">2025 - Year Overview</h2>
+                    <div class="year-stats">
+                        <span id="yearEntries" class="year-stat">📝 150 entries</span>
+                        <span id="yearBestStreak" class="year-stat">🔥 Best streak: 23 days</span>
+                        <span id="yearGoals" class="year-stat">🎯 3/6 goals completed</span>
+                    </div>
+                </div>
+                <button id="nextYear" class="btn btn--outline btn--sm">Next Year →</button>
             </div>
 
-            <!-- Goals Navigation -->
+            <div id="yearlyCalendar" class="yearly-calendar">
+                <!-- Yearly calendar will be populated by JavaScript -->
+            </div>
+        </main>
+
+        <!-- Goals View -->
+        <main id="goalsView" class="main-view hidden">
             <div class="goals-nav">
-                <button id="weeklyGoalsTab" class="goals-tab-btn goals-tab-btn--active">Weekly Goals</button>
-                <button id="monthlyGoalsTab" class="goals-tab-btn">Monthly Goals</button>
-                <button id="yearlyGoalsTab" class="goals-tab-btn">Yearly Goals</button>
+                <button id="weeklyGoalsTab" class="goals-tab goals-tab--active">📊 Weekly</button>
+                <button id="monthlyGoalsTab" class="goals-tab">📅 Monthly</button>
+                <button id="yearlyGoalsTab" class="goals-tab">🗓️ Yearly</button>
             </div>
 
             <!-- Weekly Goals -->
             <div id="weeklyGoalsSection" class="goals-section">
-                <div class="goals-card">
-                    <div class="goals-header">
-                        <h3>Weekly Goals (Week 36, 2025)</h3>
-                        <div class="progress-indicator">
-                            <div class="progress-bar">
-                                <div id="weeklyProgress" class="progress-fill" style="width: 20%"></div>
-                            </div>
-                            <span id="weeklyProgressText">1/5 completed (20%)</span>
+                <div class="goal-card">
+                    <div class="goal-header">
+                        <h3>📊 Weekly Goals</h3>
+                        <div class="week-selector">
+                            <select id="weekGoalSelector" class="form-control">
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
                         </div>
                     </div>
-                    <div class="goals-list" id="weeklyGoalsList">
-                        <!-- Goals will be populated by JavaScript -->
+                    <div id="weeklyTasksList" class="tasks-list">
+                        <!-- Weekly tasks will be populated by JavaScript -->
                     </div>
-                    <div class="add-goal-section">
-                        <input type="text" id="newWeeklyGoal" class="form-control" placeholder="Add a new weekly goal...">
-                        <button id="addWeeklyGoal" class="btn btn--primary btn--sm">Add Goal</button>
+                    <div class="add-task-section">
+                        <div class="flex gap-8">
+                            <input type="text" id="newWeeklyTask" class="form-control" 
+                                   placeholder="Add new weekly goal..." maxlength="100">
+                            <button id="addWeeklyTask" class="btn btn--secondary btn--sm">+ Add</button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Monthly Goals -->
             <div id="monthlyGoalsSection" class="goals-section hidden">
-                <div class="goals-card">
-                    <div class="goals-header">
-                        <h3>Monthly Goals (September 2025)</h3>
-                        <div class="progress-indicator">
-                            <div class="progress-bar">
-                                <div id="monthlyProgress" class="progress-fill" style="width: 0%"></div>
-                            </div>
-                            <span id="monthlyProgressText">0/5 completed (0%)</span>
+                <div class="goal-card">
+                    <div class="goal-header">
+                        <h3>📅 Monthly Goals</h3>
+                        <div class="month-selector">
+                            <select id="monthGoalSelector" class="form-control">
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
                         </div>
                     </div>
-                    <div class="goals-list" id="monthlyGoalsList">
-                        <!-- Goals will be populated by JavaScript -->
+                    <div id="monthlyTasksList" class="tasks-list">
+                        <!-- Monthly tasks will be populated by JavaScript -->
                     </div>
-                    <div class="add-goal-section">
-                        <input type="text" id="newMonthlyGoal" class="form-control" placeholder="Add a new monthly goal...">
-                        <button id="addMonthlyGoal" class="btn btn--primary btn--sm">Add Goal</button>
+                    <div class="add-task-section">
+                        <div class="flex gap-8">
+                            <input type="text" id="newMonthlyTask" class="form-control" 
+                                   placeholder="Add new monthly goal..." maxlength="100">
+                            <button id="addMonthlyTask" class="btn btn--secondary btn--sm">+ Add</button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Yearly Goals -->
             <div id="yearlyGoalsSection" class="goals-section hidden">
-                <div class="goals-card">
-                    <div class="goals-header">
-                        <h3>Yearly Goals (2025)</h3>
-                        <div class="progress-indicator">
-                            <div class="progress-bar">
-                                <div id="yearlyProgress" class="progress-fill" style="width: 0%"></div>
-                            </div>
-                            <span id="yearlyProgressText">0/6 completed (0%)</span>
+                <div class="goal-card">
+                    <div class="goal-header">
+                        <h3>🗓️ Yearly Goals</h3>
+                        <div class="year-selector">
+                            <select id="yearGoalSelector" class="form-control">
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
                         </div>
                     </div>
-                    <div class="goals-list" id="yearlyGoalsList">
-                        <!-- Goals will be populated by JavaScript -->
+                    <div id="yearlyTasksList" class="tasks-list">
+                        <!-- Yearly tasks will be populated by JavaScript -->
                     </div>
-                    <div class="add-goal-section">
-                        <input type="text" id="newYearlyGoal" class="form-control" placeholder="Add a new yearly goal...">
-                        <button id="addYearlyGoal" class="btn btn--primary btn--sm">Add Goal</button>
+                    <div class="add-task-section">
+                        <div class="flex gap-8">
+                            <input type="text" id="newYearlyTask" class="form-control" 
+                                   placeholder="Add new yearly goal..." maxlength="150">
+                            <button id="addYearlyTask" class="btn btn--secondary btn--sm">+ Add</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -185,19 +218,27 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="modalDate">Today</h3>
-                <button id="closeModal" class="btn btn--outline btn--sm">Close</button>
+                <div class="entry-stats">
+                    <span id="wordCount" class="word-count">0 words</span>
+                    <span id="entryStreak" class="entry-streak">🔥 5 day streak</span>
+                </div>
+                <button id="closeModal" class="btn btn--outline btn--sm">✕</button>
             </div>
             
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label">What did you do today?</label>
+                    <label class="form-label">📝 What did you accomplish today?</label>
                     <textarea id="dailyText" class="form-control daily-textarea" 
                               rows="8" 
-                              placeholder="Write about your NEET-PG preparation today..."></textarea>
+                              placeholder="Write about your day, achievements, learnings, and reflections..."></textarea>
+                    <div class="textarea-toolbar">
+                        <button id="quickSave" class="btn btn--outline btn--sm">💾 Quick Save</button>
+                        <span class="auto-save-status">✓ Auto-saved</span>
+                    </div>
                 </div>
 
                 <div class="habits-section">
-                    <h4>Daily NEET-PG Habits</h4>
+                    <h4>✅ Daily Habits</h4>
                     <div id="habitsList" class="habits-list">
                         <!-- Habits will be populated by JavaScript -->
                     </div>
@@ -206,14 +247,119 @@
                         <div class="flex gap-8">
                             <input type="text" id="newHabit" class="form-control" 
                                    placeholder="Add custom habit..." maxlength="30">
-                            <button id="addHabit" class="btn btn--secondary btn--sm">Add</button>
+                            <button id="addHabit" class="btn btn--secondary btn--sm">+ Add</button>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="modal-footer">
-                <button id="saveEntry" class="btn btn--primary">Save</button>
+                <button id="saveEntry" class="btn btn--primary">💾 Save Entry</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GitHub Sync Setup Modal -->
+    <div id="syncSetupModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔧 GitHub Sync Setup</h3>
+                <button id="closeSyncSetup" class="btn btn--outline btn--sm">✕</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="sync-setup-content">
+                    <div class="setup-step">
+                        <h4>Step 1: Create GitHub Personal Access Token</h4>
+                        <p>1. Go to <a href="https://github.com/settings/tokens" target="_blank">GitHub Settings > Personal access tokens</a></p>
+                        <p>2. Click "Generate new token" > "Generate new token (classic)"</p>
+                        <p>3. Add note: "Daily Tracker Sync"</p>
+                        <p>4. Select scopes: <code>gist</code> (Create gists)</p>
+                        <p>5. Click "Generate token" and copy it</p>
+                    </div>
+                    
+                    <div class="setup-step">
+                        <h4>Step 2: Enter Your Token</h4>
+                        <input type="password" id="githubToken" class="form-control" 
+                               placeholder="Paste your GitHub token here..." autocomplete="off">
+                        <div class="token-status" id="tokenStatus"></div>
+                    </div>
+                    
+                    <div class="setup-step">
+                        <button id="testConnection" class="btn btn--primary btn--full-width">🔗 Test Connection</button>
+                        <button id="enableSync" class="btn btn--primary btn--full-width hidden">✅ Enable Sync</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Jump To Modal -->
+    <div id="jumpToModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🎯 Jump To Date</h3>
+                <button id="closeJumpTo" class="btn btn--outline btn--sm">✕</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="jump-options">
+                    <div class="form-group">
+                        <label class="form-label">Select Date</label>
+                        <input type="date" id="jumpDate" class="form-control">
+                    </div>
+                    <div class="quick-jump-buttons">
+                        <button id="jumpToday" class="btn btn--secondary">Today</button>
+                        <button id="jumpYesterday" class="btn btn--secondary">Yesterday</button>
+                        <button id="jumpWeekStart" class="btn btn--secondary">Week Start</button>
+                        <button id="jumpMonthStart" class="btn btn--secondary">Month Start</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button id="executeJump" class="btn btn--primary">🚀 Jump There</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal hidden">
+        <div class="modal-content modal-content--large">
+            <div class="modal-header">
+                <h3>❓ Keyboard Shortcuts & Help</h3>
+                <button id="closeHelp" class="btn btn--outline btn--sm">✕</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="help-content">
+                    <div class="help-section">
+                        <h4>⌨️ Keyboard Shortcuts</h4>
+                        <div class="shortcuts-list">
+                            <div class="shortcut-item"><kbd>←/→</kbd> Navigate weeks/months</div>
+                            <div class="shortcut-item"><kbd>↑/↓</kbd> Switch views</div>
+                            <div class="shortcut-item"><kbd>Enter</kbd> Open today's entry</div>
+                            <div class="shortcut-item"><kbd>G</kbd> Go to Goals</div>
+                            <div class="shortcut-item"><kbd>J</kbd> Jump to date</div>
+                            <div class="shortcut-item"><kbd>E</kbd> Export data</div>
+                            <div class="shortcut-item"><kbd>S</kbd> Sync now</div>
+                            <div class="shortcut-item"><kbd>Escape</kbd> Close modals</div>
+                            <div class="shortcut-item"><kbd>Ctrl+S</kbd> Quick save</div>
+                        </div>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h4>🌟 Features</h4>
+                        <ul class="features-list">
+                            <li><strong>Auto-sync:</strong> Data automatically syncs to GitHub Gist</li>
+                            <li><strong>Streak tracking:</strong> Monitor your consistency</li>
+                            <li><strong>Smart goals:</strong> Weekly, monthly, and yearly task management</li>
+                            <li><strong>Habit visualization:</strong> Color-coded habit tracking</li>
+                            <li><strong>Quick navigation:</strong> Jump to any date instantly</li>
+                            <li><strong>Export options:</strong> Backup your data anytime</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -223,7 +369,7 @@
         <div class="modal-content modal-content--large">
             <div class="modal-header">
                 <h3 id="entryViewDate">Entry Details</h3>
-                <button id="closeEntryView" class="btn btn--outline btn--sm">Close</button>
+                <button id="closeEntryView" class="btn btn--outline btn--sm">✕</button>
             </div>
             
             <div class="modal-body">
@@ -234,63 +380,21 @@
         </div>
     </div>
 
-    <!-- GitHub Sync Setup Modal -->
-    <div id="syncSetupModal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>🔄 Setup GitHub Gist Sync</h3>
-                <button id="closeSyncSetup" class="btn btn--outline btn--sm">Close</button>
-            </div>
-            
-            <div class="modal-body">
-                <div class="sync-setup-content">
-                    <div class="setup-step">
-                        <h4>Step 1: Create GitHub Personal Access Token</h4>
-                        <ol class="setup-instructions">
-                            <li>Go to <a href="https://github.com/settings/tokens" target="_blank">GitHub Settings → Personal Access Tokens</a></li>
-                            <li>Click "Generate new token (classic)"</li>
-                            <li>Give it a name like "NEET-PG Tracker"</li>
-                            <li>Select scopes: <strong>gist</strong> (for creating private gists)</li>
-                            <li>Set expiration to "No expiration" (or your preference)</li>
-                            <li>Click "Generate token" and copy the token</li>
-                        </ol>
-                    </div>
-                    
-                    <div class="setup-step">
-                        <h4>Step 2: Enter Your Token</h4>
-                        <div class="form-group">
-                            <label class="form-label">GitHub Personal Access Token</label>
-                            <input type="password" id="githubToken" class="form-control" 
-                                   placeholder="ghp_xxxxxxxxxxxx...">
-                            <small class="form-text">Your token is stored locally and never shared</small>
-                        </div>
-                        
-                        <div class="sync-actions">
-                            <button id="testConnection" class="btn btn--secondary">Test Connection</button>
-                            <button id="enableSync" class="btn btn--primary">Enable Sync</button>
-                        </div>
-                    </div>
-
-                    <div id="syncTestResult" class="sync-test-result hidden">
-                        <!-- Test results will be shown here -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Export Options Modal -->
     <div id="exportModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Export Data</h3>
-                <button id="closeExportModal" class="btn btn--outline btn--sm">Close</button>
+                <h3>📤 Export Your Data</h3>
+                <button id="closeExportModal" class="btn btn--outline btn--sm">✕</button>
             </div>
             
             <div class="modal-body">
                 <div class="export-options">
-                    <button id="exportJSON" class="btn btn--primary btn--full-width">Export as JSON</button>
-                    <button id="exportCSV" class="btn btn--secondary btn--full-width">Export as CSV</button>
+                    <button id="exportJSON" class="btn btn--primary btn--full-width">📄 Export as JSON</button>
+                    <button id="exportCSV" class="btn btn--secondary btn--full-width">📊 Export as CSV</button>
+                    <div class="export-info">
+                        <p>💡 <strong>Tip:</strong> JSON format preserves all data including goals and habits. CSV is great for spreadsheet analysis.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -300,8 +404,8 @@
     <div id="importModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Import Data</h3>
-                <button id="closeImportModal" class="btn btn--outline btn--sm">Close</button>
+                <h3>📥 Import Data</h3>
+                <button id="closeImportModal" class="btn btn--outline btn--sm">✕</button>
             </div>
             
             <div class="modal-body">
@@ -318,7 +422,7 @@
                             <span>Overwrite existing data</span>
                         </label>
                     </div>
-                    <button id="executeImport" class="btn btn--primary btn--full-width">Import Data</button>
+                    <button id="executeImport" class="btn btn--primary btn--full-width">📥 Import Data</button>
                 </div>
             </div>
         </div>
@@ -327,6 +431,12 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden">
         <span id="toastMessage"></span>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-spinner hidden">
+        <div class="spinner"></div>
+        <p>Syncing your data...</p>
     </div>
 
     <script src="app.js"></script>
