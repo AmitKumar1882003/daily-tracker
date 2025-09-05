@@ -1,28 +1,57 @@
-// ULTIMATE Daily Activity Tracker for Amit - FIXED VERSION
-// Version 3.1 - Bug Fixes Applied
+// Enhanced Daily Activity Tracker with Goals and GitHub Gist Sync
 
-class UltimateDailyTracker {
+class DailyTracker {
     constructor() {
         this.currentDate = new Date();
         this.currentWeekStart = this.getWeekStart(this.currentDate);
         this.currentMonth = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), 1);
-        this.currentYear = this.currentDate.getFullYear();
         this.selectedDate = null;
         this.currentView = 'weekly';
-        this.currentGoalsView = 'weekly';
         
-        // User profile
-        this.userName = "Amit";
+        // Motivational quotes collection
+        this.motivationalQuotes = [
+            "Success is the sum of small efforts repeated day in and day out.",
+            "The way to get started is to quit talking and begin doing.",
+            "Don't wish it were easier; wish you were better.",
+            "Discipline is choosing between what you want now and what you want most.",
+            "Excellence is not a skill, it's an attitude.",
+            "Progress, not perfection.",
+            "Small daily improvements lead to staggering yearly results.",
+            "The secret of getting ahead is getting started.",
+            "You don't have to be great to get started, but you have to get started to be great.",
+            "Success isn't just about what you accomplish in your life, it's about what you inspire others to do.",
+            "The only impossible journey is the one you never begin.",
+            "Quality is not an act, it is a habit.",
+            "Champions keep playing until they get it right.",
+            "The difference between ordinary and extraordinary is that little extra.",
+            "Success is where preparation and opportunity meet.",
+            "It is during our darkest moments that we must focus to see the light.",
+            "Believe you can and you're halfway there.",
+            "The future depends on what you do today.",
+            "Don't watch the clock; do what it does. Keep going.",
+            "The expert in anything was once a beginner.",
+            "Your limitation—it's only your imagination.",
+            "Push yourself, because no one else is going to do it for you.",
+            "Great things never come from comfort zones.",
+            "Dream it. Wish it. Do it.",
+            "Success doesn't just find you. You have to go out and get it.",
+            "The harder you work for something, the greater you'll feel when you achieve it.",
+            "Dream bigger. Do bigger.",
+            "Don't stop when you're tired. Stop when you're done.",
+            "Wake up with determination. Go to bed with satisfaction.",
+            "Do something today that your future self will thank you for."
+        ];
         
-        // Predefined habit colors
+        // Habit colors
         this.habitColors = {
-            "Anki Reviews": "#3B82F6",
+            "Study/Learning": "#3B82F6",
             "Exercise": "#10B981", 
-            "Read": "#EF4444",
-            "Meditate": "#8B5CF6",
-            "Drink Water (8 glasses)": "#06B6D4",
-            "Study": "#F59E0B",
-            "Journal Writing": "#EC4899"
+            "Reading": "#EF4444",
+            "Planning": "#8B5CF6",
+            "Review Sessions": "#06B6D4",
+            "Project Work": "#F59E0B",
+            "Skill Development": "#EC4899",
+            "Health Care": "#14B8A6"
         };
         
         // Available colors for new habits
@@ -34,174 +63,81 @@ class UltimateDailyTracker {
         
         // Default habits
         this.defaultHabits = [
-            "Anki Reviews", "Exercise", "Read", "Meditate", 
-            "Drink Water (8 glasses)", "Study", "Journal Writing"
+            "Study/Learning",
+            "Exercise", 
+            "Reading",
+            "Planning",
+            "Review Sessions",
+            "Project Work",
+            "Skill Development",
+            "Health Care"
         ];
-        
-        // Built-in motivational quotes (60+ quotes)
-        this.motivationalQuotes = [
-            { quote: "The secret of getting ahead is getting started.", author: "Mark Twain", category: "productivity" },
-            { quote: "Success is the sum of small efforts repeated day in and day out.", author: "Robert Collier", category: "habits" },
-            { quote: "Learning never exhausts the mind.", author: "Leonardo da Vinci", category: "learning" },
-            { quote: "The only way to do great work is to love what you do.", author: "Steve Jobs", category: "success" },
-            { quote: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln", category: "habits" },
-            { quote: "An investment in knowledge pays the best interest.", author: "Benjamin Franklin", category: "learning" },
-            { quote: "You are never too old to set another goal or to dream a new dream.", author: "C.S. Lewis", category: "growth" },
-            { quote: "Progress, not perfection.", author: "Unknown", category: "growth" },
-            { quote: "The future depends on what you do today.", author: "Mahatma Gandhi", category: "productivity" },
-            { quote: "Excellence is never an accident. It is always the result of high intention.", author: "Aristotle", category: "success" },
-            { quote: "Don't watch the clock; do what it does. Keep going.", author: "Sam Levenson", category: "persistence" },
-            { quote: "The way to get started is to quit talking and begin doing.", author: "Walt Disney", category: "productivity" },
-            { quote: "Innovation distinguishes between a leader and a follower.", author: "Steve Jobs", category: "growth" },
-            { quote: "Life is what happens while you're making other plans.", author: "John Lennon", category: "mindfulness" },
-            { quote: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt", category: "dreams" },
-            { quote: "Success is not final, failure is not fatal: courage to continue counts.", author: "Winston Churchill", category: "persistence" },
-            { quote: "The only impossible journey is the one you never begin.", author: "Tony Robbins", category: "productivity" },
-            { quote: "In the middle of difficulty lies opportunity.", author: "Albert Einstein", category: "growth" },
-            { quote: "Believe you can and you're halfway there.", author: "Theodore Roosevelt", category: "confidence" },
-            { quote: "You are destined to become the person you decide to be.", author: "Ralph Waldo Emerson", category: "growth" },
-            { quote: "Do something today that your future self will thank you for.", author: "Sean Croxton", category: "habits" },
-            { quote: "Your limitation—it's only your imagination.", author: "Unknown", category: "mindset" },
-            { quote: "Push yourself, because no one else is going to do it for you.", author: "Unknown", category: "motivation" },
-            { quote: "Great things never come from comfort zones.", author: "Unknown", category: "growth" },
-            { quote: "Dream it. Wish it. Do it.", author: "Unknown", category: "dreams" },
-            { quote: "Success doesn't just find you. You have to go out and get it.", author: "Unknown", category: "success" },
-            { quote: "The harder you work, the greater you'll feel when you achieve it.", author: "Unknown", category: "work" },
-            { quote: "Dream bigger. Do bigger.", author: "Unknown", category: "dreams" },
-            { quote: "Don't stop when you're tired. Stop when you're done.", author: "Unknown", category: "persistence" },
-            { quote: "Wake up with determination. Go to bed with satisfaction.", author: "Unknown", category: "habits" },
-            { quote: "Little things make big days.", author: "Unknown", category: "habits" },
-            { quote: "Hard does not mean impossible.", author: "Unknown", category: "persistence" },
-            { quote: "Don't wait for opportunity. Create it.", author: "Unknown", category: "productivity" },
-            { quote: "Discover your strengths through challenges.", author: "Unknown", category: "growth" },
-            { quote: "Focus on goals, not obstacles.", author: "Unknown", category: "success" },
-            { quote: "Dream it. Believe it. Build it.", author: "Unknown", category: "dreams" },
-            { quote: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb", category: "productivity" },
-            { quote: "A year from now you may wish you had started today.", author: "Karen Lamb", category: "motivation" },
-            { quote: "You don't have to be great to get started, but you have to get started to be great.", author: "Les Brown", category: "productivity" },
-            { quote: "The difference between ordinary and extraordinary is that little extra.", author: "Jimmy Johnson", category: "excellence" },
-            { quote: "Champions keep playing until they get it right.", author: "Billie Jean King", category: "persistence" },
-            { quote: "The expert in anything was once a beginner.", author: "Helen Hayes", category: "learning" },
-            { quote: "Every master was once a disaster.", author: "T. Harv Eker", category: "learning" },
-            { quote: "Focus on being productive instead of busy.", author: "Tim Ferriss", category: "productivity" },
-            { quote: "You are what you do, not what you say you'll do.", author: "Carl Jung", category: "action" },
-            { quote: "Success is walking from failure to failure with no loss of enthusiasm.", author: "Winston Churchill", category: "persistence" },
-            { quote: "The only way to achieve the impossible is to believe it is possible.", author: "Charles Kingsleigh", category: "belief" },
-            { quote: "Your only limit is your mind.", author: "Unknown", category: "mindset" },
-            { quote: "Be yourself; everyone else is already taken.", author: "Oscar Wilde", category: "authenticity" },
-            { quote: "Be the change you wish to see in the world.", author: "Mahatma Gandhi", category: "change" },
-            { quote: "To live is the rarest thing in the world. Most people just exist.", author: "Oscar Wilde", category: "life" },
-            { quote: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius", category: "persistence" },
-            { quote: "Everything you've ever wanted is on the other side of fear.", author: "George Addair", category: "courage" },
-            { quote: "Life is 10% what happens to you and 90% how you react to it.", author: "Charles R. Swindoll", category: "mindset" },
-            { quote: "The most difficult thing is the decision to act, the rest is merely tenacity.", author: "Amelia Earhart", category: "action" }
-        ];
-        
-        // Auto-save timer
-        this.autoSaveTimer = null;
-        this.lastSaveTime = null;
-        
-        // Sync configuration
-        this.syncConfig = {
-            enabled: false,
-            gistId: null,
+
+        // GitHub sync settings
+        this.githubSettings = {
+            token: '',
+            gistId: '',
             lastSync: null,
-            githubToken: null,
-            autoSyncInterval: 30000 // 30 seconds
+            autoSync: false
         };
+
+        // Sync status
+        this.syncInProgress = false;
+        this.syncInterval = null;
         
         this.init();
     }
     
     init() {
-        console.log('🚀 Initializing ULTIMATE Daily Tracker for Amit...');
-        this.loadData();
-        this.setupEventListeners();
-        this.setupKeyboardShortcuts();
-        this.displayMotivationalQuote();
-        this.renderCurrentView();
-        this.setupGoalsSelectors();
-        this.startAutoSync();
-        this.updateSyncStatus();
+        console.log('Initializing Enhanced Daily Tracker...');
+        // Wait for DOM to be fully loaded
+        setTimeout(() => {
+            this.loadData();
+            this.displayRandomQuote();
+            this.setupEventListeners();
+            this.renderCurrentView();
+            this.loadGitHubSettings();
+            this.setupAutoSync();
+        }, 100);
     }
     
     loadData() {
-        const storedData = localStorage.getItem('ultimateDailyTrackerData');
+        // Load from localStorage
+        const storedData = localStorage.getItem('dailyTrackerData');
         if (storedData) {
             const data = JSON.parse(storedData);
             this.entries = data.entries || {};
             this.customHabits = data.customHabits || [];
             this.habitColors = { ...this.habitColors, ...(data.habitColors || {}) };
-            this.goals = data.goals || { weekly: {}, monthly: {}, yearly: {} };
-            this.syncConfig = { ...this.syncConfig, ...(data.syncConfig || {}) };
+            this.goals = data.goals || this.getDefaultGoals();
         } else {
             // Use provided application data as initial data
-            this.entries = {
-                "2025-09-05": {
-                    "text": "Had an incredibly productive day working on the new web development project. Made excellent progress on the database design and successfully fixed several critical bugs that were blocking the team. The morning team meeting went very well and we discussed the next sprint goals and timeline. Spent 4 hours on JavaScript practice and completed 8 algorithm challenges on LeetCode, focusing on array manipulation and string processing problems. Also reviewed React concepts in depth and built a small weather component from scratch using hooks and context API. Read two chapters from 'Clean Code' by Robert Martin and took detailed notes on writing maintainable functions. The concepts around single responsibility principle really clicked today. Planning to continue with the authentication module tomorrow and start the user interface design. Feeling very motivated about the progress and the momentum I'm building.",
-                    "habits": { "Anki Reviews": true, "Exercise": false, "Read": true, "Meditate": true, "Drink Water (8 glasses)": true, "Study": true, "Journal Writing": true },
-                    "timestamp": "2025-09-05T20:31:00.000Z"
-                },
-                "2025-09-04": {
-                    "text": "Focused entirely on learning JavaScript fundamentals today. Practiced coding for 5 hours, covering closures, promises, async/await, and event loops. The asynchronous programming concepts are starting to make sense finally. Spent significant time reviewing algorithms and data structures - particularly focused on binary trees, graph traversal, and dynamic programming approaches. Completed 12 coding challenges on LeetCode and HackerRank, felt much more confident with recursion and problem-solving patterns. Read three chapters from 'You Don't Know JS' series and took comprehensive notes. Also watched several YouTube tutorials on modern JavaScript features and ES6+ syntax.",
-                    "habits": { "Anki Reviews": true, "Exercise": true, "Read": false, "Meditate": false, "Drink Water (8 glasses)": false, "Study": true, "Journal Writing": true },
-                    "timestamp": "2025-09-04T22:15:00.000Z"
-                },
-                "2025-09-03": {
-                    "text": "Started the day with an intensive study session on React hooks and state management patterns. Finally understood useEffect dependencies, custom hooks, and context API properly after struggling with these concepts for weeks. Built a comprehensive weather application to practice API integration and state management patterns. The project helped solidify my understanding of component lifecycle and data flow. Attended a 3-hour online workshop on modern JavaScript frameworks and learned about performance optimization techniques. Evening was spent reading about system design principles and scalability patterns.",
-                    "habits": { "Anki Reviews": true, "Exercise": true, "Read": true, "Meditate": true, "Drink Water (8 glasses)": true, "Study": true, "Journal Writing": false },
-                    "timestamp": "2025-09-03T21:45:00.000Z"
-                },
-                "2025-09-02": {
-                    "text": "Deep dive into backend development today. Worked with Node.js and Express to build REST APIs from scratch. Learned about middleware functions, authentication strategies, and database integration patterns. Spent considerable time setting up MongoDB and practicing CRUD operations with proper error handling. Also studied about API security, JWT tokens, password hashing with bcrypt, and input validation. Built a small blog API as practice project with user authentication and post management.",
-                    "habits": { "Anki Reviews": true, "Exercise": false, "Read": true, "Meditate": true, "Drink Water (8 glasses)": false, "Study": true, "Journal Writing": true },
-                    "timestamp": "2025-09-02T23:30:00.000Z"
-                }
-            };
-
-            this.goals = {
-                weekly: {
-                    "2025-W36": {
-                        title: "Week of Sep 2-8, 2025",
-                        tasks: [
-                            { id: "w1", text: "Complete JavaScript module on functions and closures", completed: false },
-                            { id: "w2", text: "Read 2 chapters of Clean Code book", completed: true },
-                            { id: "w3", text: "Build weather app project", completed: false },
-                            { id: "w4", text: "Maintain Anki streak (7/7 days)", completed: false },
-                            { id: "w5", text: "Exercise 5 times this week", completed: false }
-                        ]
-                    }
-                },
-                monthly: {
-                    "2025-09": {
-                        title: "September 2025 Goals",
-                        tasks: [
-                            { id: "m1", text: "Complete full JavaScript course with projects", completed: false },
-                            { id: "m2", text: "Read 4 technical books cover to cover", completed: false },
-                            { id: "m3", text: "Build 2 complete web applications", completed: false },
-                            { id: "m4", text: "Maintain daily Anki reviews (30/30 days)", completed: false },
-                            { id: "m5", text: "Exercise 20 days this month", completed: false }
-                        ]
-                    }
-                },
-                yearly: {
-                    "2025": {
-                        title: "2025 Annual Goals",
-                        tasks: [
-                            { id: "y1", text: "Master full-stack web development", completed: false },
-                            { id: "y2", text: "Read 50 books (technical and personal development)", completed: false },
-                            { id: "y3", text: "Build and deploy 10 complete projects", completed: false },
-                            { id: "y4", text: "Learn Spanish to conversational level", completed: false },
-                            { id: "y5", text: "Land first developer job", completed: false },
-                            { id: "y6", text: "Maintain consistent daily habits (80%+ success rate)", completed: false }
-                        ]
-                    }
-                }
-            };
-
+            this.entries = {};
+            this.goals = this.getDefaultGoals();
             this.customHabits = [];
             this.saveData();
         }
+    }
+
+    getDefaultGoals() {
+        return {
+            weekly: [
+                { id: 'w1', text: 'Complete 3 major study sessions', completed: false },
+                { id: 'w2', text: 'Exercise 5 times this week', completed: false },
+                { id: 'w3', text: 'Read 2 chapters of current book', completed: true },
+                { id: 'w4', text: 'Plan next week\'s objectives', completed: false }
+            ],
+            monthly: [
+                { id: 'm1', text: 'Complete current course/program', completed: false },
+                { id: 'm2', text: 'Maintain consistent daily habits', completed: false },
+                { id: 'm3', text: 'Finish 2 major projects', completed: false }
+            ],
+            yearly: [
+                { id: 'y1', text: 'Achieve primary career goal', completed: false },
+                { id: 'y2', text: 'Develop 3 new major skills', completed: false },
+                { id: 'y3', text: 'Maintain excellent health and fitness', completed: false }
+            ]
+        };
     }
     
     saveData() {
@@ -210,156 +146,155 @@ class UltimateDailyTracker {
             customHabits: this.customHabits,
             habitColors: this.habitColors,
             goals: this.goals,
-            syncConfig: this.syncConfig,
-            version: "3.1.0",
+            version: "3.0.0",
             lastUpdated: new Date().toISOString()
         };
-        localStorage.setItem('ultimateDailyTrackerData', JSON.stringify(data));
-        this.lastSaveTime = new Date();
-        this.updateAutoSaveStatus();
+        localStorage.setItem('dailyTrackerData', JSON.stringify(data));
+        
+        // Trigger sync if enabled
+        if (this.githubSettings.autoSync && !this.syncInProgress) {
+            this.debouncedSync();
+        }
+    }
+
+    displayRandomQuote() {
+        const quoteElement = document.getElementById('motivationalQuote');
+        if (quoteElement) {
+            const randomQuote = this.motivationalQuotes[Math.floor(Math.random() * this.motivationalQuotes.length)];
+            quoteElement.textContent = `"${randomQuote}"`;
+        }
     }
     
     setupEventListeners() {
         console.log('Setting up event listeners...');
         
-        // Tab navigation - FIXED: Added null checks and proper event binding
+        // Tab navigation - with preventDefault to stop any default behavior
         const weeklyTab = document.getElementById('weeklyTab');
         const monthlyTab = document.getElementById('monthlyTab');
-        const yearlyTab = document.getElementById('yearlyTab');
         const goalsTab = document.getElementById('goalsTab');
         
-        if (weeklyTab) weeklyTab.addEventListener('click', (e) => { 
-            e.preventDefault(); 
-            console.log('Weekly tab clicked');
-            this.switchView('weekly'); 
-        });
-        if (monthlyTab) monthlyTab.addEventListener('click', (e) => { 
-            e.preventDefault(); 
-            this.switchView('monthly'); 
-        });
-        if (yearlyTab) yearlyTab.addEventListener('click', (e) => { 
-            e.preventDefault(); 
-            this.switchView('yearly'); 
-        });
-        if (goalsTab) goalsTab.addEventListener('click', (e) => { 
-            e.preventDefault(); 
-            this.switchView('goals'); 
-        });
-        
-        // Goals navigation - FIXED
-        const weeklyGoalsTab = document.getElementById('weeklyGoalsTab');
-        const monthlyGoalsTab = document.getElementById('monthlyGoalsTab');
-        const yearlyGoalsTab = document.getElementById('yearlyGoalsTab');
-        
-        if (weeklyGoalsTab) weeklyGoalsTab.addEventListener('click', (e) => { 
-            e.preventDefault(); 
-            this.switchGoalsView('weekly'); 
-        });
-        if (monthlyGoalsTab) monthlyGoalsTab.addEventListener('click', (e) => { 
-            e.preventDefault(); 
-            this.switchGoalsView('monthly'); 
-        });
-        if (yearlyGoalsTab) yearlyGoalsTab.addEventListener('click', (e) => { 
-            e.preventDefault(); 
-            this.switchGoalsView('yearly'); 
-        });
+        if (weeklyTab) {
+            weeklyTab.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.switchView('weekly');
+            });
+        }
+        if (monthlyTab) {
+            monthlyTab.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.switchView('monthly');
+            });
+        }
+        if (goalsTab) {
+            goalsTab.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.switchView('goals');
+            });
+        }
         
         // Navigation controls
         const prevWeek = document.getElementById('prevWeek');
         const nextWeek = document.getElementById('nextWeek');
         const prevMonth = document.getElementById('prevMonth');
         const nextMonth = document.getElementById('nextMonth');
-        const prevYear = document.getElementById('prevYear');
-        const nextYear = document.getElementById('nextYear');
         const todayBtn = document.getElementById('todayBtn');
         
-        if (prevWeek) prevWeek.addEventListener('click', () => this.navigateWeek(-1));
-        if (nextWeek) nextWeek.addEventListener('click', () => this.navigateWeek(1));
-        if (prevMonth) prevMonth.addEventListener('click', () => this.navigateMonth(-1));
-        if (nextMonth) nextMonth.addEventListener('click', () => this.navigateMonth(1));
-        if (prevYear) prevYear.addEventListener('click', () => this.navigateYear(-1));
-        if (nextYear) nextYear.addEventListener('click', () => this.navigateYear(1));
-        if (todayBtn) todayBtn.addEventListener('click', () => this.goToToday());
+        if (prevWeek) prevWeek.addEventListener('click', (e) => { e.preventDefault(); this.navigateWeek(-1); });
+        if (nextWeek) nextWeek.addEventListener('click', (e) => { e.preventDefault(); this.navigateWeek(1); });
+        if (prevMonth) prevMonth.addEventListener('click', (e) => { e.preventDefault(); this.navigateMonth(-1); });
+        if (nextMonth) nextMonth.addEventListener('click', (e) => { e.preventDefault(); this.navigateMonth(1); });
+        if (todayBtn) todayBtn.addEventListener('click', (e) => { e.preventDefault(); this.goToToday(); });
         
-        // Header controls
-        const jumpToBtn = document.getElementById('jumpToBtn');
-        const exportBtn = document.getElementById('exportBtn');
-        const helpBtn = document.getElementById('helpBtn');
+        // Sync and settings
         const syncBtn = document.getElementById('syncBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const closeSettingsModal = document.getElementById('closeSettingsModal');
+        const testConnection = document.getElementById('testConnection');
+        const saveSettings = document.getElementById('saveSettings');
         
-        if (jumpToBtn) jumpToBtn.addEventListener('click', () => this.openJumpToModal());
-        if (exportBtn) exportBtn.addEventListener('click', () => this.openExportModal());
-        if (helpBtn) helpBtn.addEventListener('click', () => this.openHelpModal());
-        if (syncBtn) syncBtn.addEventListener('click', () => this.initializeSync());
+        if (syncBtn) syncBtn.addEventListener('click', (e) => { e.preventDefault(); this.manualSync(); });
+        if (settingsBtn) {
+            settingsBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Settings button clicked');
+                this.openSettings();
+            });
+        }
+        if (closeSettingsModal) closeSettingsModal.addEventListener('click', (e) => { e.preventDefault(); this.closeSettings(); });
+        if (testConnection) testConnection.addEventListener('click', (e) => { e.preventDefault(); this.testGitHubConnection(); });
+        if (saveSettings) saveSettings.addEventListener('click', (e) => { e.preventDefault(); this.saveGitHubSettings(); });
+        
+        // Export/Import
+        const exportBtn = document.getElementById('exportBtn');
+        const importBtn = document.getElementById('importBtn');
+        
+        if (exportBtn) exportBtn.addEventListener('click', (e) => { e.preventDefault(); this.openExportModal(); });
+        if (importBtn) importBtn.addEventListener('click', (e) => { e.preventDefault(); this.openImportModal(); });
         
         // Modal controls
         const closeModal = document.getElementById('closeModal');
         const closeEntryView = document.getElementById('closeEntryView');
         const closeExportModal = document.getElementById('closeExportModal');
-        const closeSyncSetup = document.getElementById('closeSyncSetup');
-        const closeJumpTo = document.getElementById('closeJumpTo');
-        const closeHelp = document.getElementById('closeHelp');
+        const closeImportModal = document.getElementById('closeImportModal');
         const saveEntry = document.getElementById('saveEntry');
         
-        if (closeModal) closeModal.addEventListener('click', () => this.closeModal());
-        if (closeEntryView) closeEntryView.addEventListener('click', () => this.closeEntryViewModal());
-        if (closeExportModal) closeExportModal.addEventListener('click', () => this.closeExportModal());
-        if (closeSyncSetup) closeSyncSetup.addEventListener('click', () => this.closeSyncSetupModal());
-        if (closeJumpTo) closeJumpTo.addEventListener('click', () => this.closeJumpToModal());
-        if (closeHelp) closeHelp.addEventListener('click', () => this.closeHelpModal());
-        if (saveEntry) saveEntry.addEventListener('click', () => this.saveEntry());
-        
-        // Entry management
-        const quickSave = document.getElementById('quickSave');
-        if (quickSave) quickSave.addEventListener('click', () => this.quickSave());
+        if (closeModal) closeModal.addEventListener('click', (e) => { e.preventDefault(); this.closeModal(); });
+        if (closeEntryView) closeEntryView.addEventListener('click', (e) => { e.preventDefault(); this.closeEntryViewModal(); });
+        if (closeExportModal) closeExportModal.addEventListener('click', (e) => { e.preventDefault(); this.closeExportModal(); });
+        if (closeImportModal) closeImportModal.addEventListener('click', (e) => { e.preventDefault(); this.closeImportModal(); });
+        if (saveEntry) saveEntry.addEventListener('click', (e) => { e.preventDefault(); this.saveEntry(); });
         
         // Export buttons
         const exportJSON = document.getElementById('exportJSON');
         const exportCSV = document.getElementById('exportCSV');
-        if (exportJSON) exportJSON.addEventListener('click', () => this.exportData('json'));
-        if (exportCSV) exportCSV.addEventListener('click', () => this.exportData('csv'));
         
-        // Sync setup
-        const testConnection = document.getElementById('testConnection');
-        const enableSync = document.getElementById('enableSync');
-        if (testConnection) testConnection.addEventListener('click', () => this.testGitHubConnection());
-        if (enableSync) enableSync.addEventListener('click', () => this.enableSync());
+        if (exportJSON) exportJSON.addEventListener('click', (e) => { e.preventDefault(); this.exportData('json'); });
+        if (exportCSV) exportCSV.addEventListener('click', (e) => { e.preventDefault(); this.exportData('csv'); });
         
-        // Jump to functionality
-        const executeJump = document.getElementById('executeJump');
-        const jumpToday = document.getElementById('jumpToday');
-        const jumpYesterday = document.getElementById('jumpYesterday');
-        const jumpWeekStart = document.getElementById('jumpWeekStart');
-        const jumpMonthStart = document.getElementById('jumpMonthStart');
+        // Import
+        const executeImport = document.getElementById('executeImport');
+        if (executeImport) executeImport.addEventListener('click', (e) => { e.preventDefault(); this.executeImport(); });
         
-        if (executeJump) executeJump.addEventListener('click', () => this.executeJump());
-        if (jumpToday) jumpToday.addEventListener('click', () => this.jumpToToday());
-        if (jumpYesterday) jumpYesterday.addEventListener('click', () => this.jumpToYesterday());
-        if (jumpWeekStart) jumpWeekStart.addEventListener('click', () => this.jumpToWeekStart());
-        if (jumpMonthStart) jumpMonthStart.addEventListener('click', () => this.jumpToMonthStart());
+        // Goals management
+        const addWeeklyGoal = document.getElementById('addWeeklyGoal');
+        const addMonthlyGoal = document.getElementById('addMonthlyGoal');
+        const addYearlyGoal = document.getElementById('addYearlyGoal');
         
-        // Goal task management - FIXED: Proper event binding
-        const addWeeklyTask = document.getElementById('addWeeklyTask');
-        const addMonthlyTask = document.getElementById('addMonthlyTask');
-        const addYearlyTask = document.getElementById('addYearlyTask');
+        if (addWeeklyGoal) addWeeklyGoal.addEventListener('click', (e) => { e.preventDefault(); this.addGoal('weekly'); });
+        if (addMonthlyGoal) addMonthlyGoal.addEventListener('click', (e) => { e.preventDefault(); this.addGoal('monthly'); });
+        if (addYearlyGoal) addYearlyGoal.addEventListener('click', (e) => { e.preventDefault(); this.addGoal('yearly'); });
         
-        if (addWeeklyTask) {
-            addWeeklyTask.addEventListener('click', (e) => {
-                e.preventDefault();
-                console.log('Add weekly task clicked');
-                this.addGoalTask('weekly');
+        // Goal input enter key
+        const newWeeklyGoal = document.getElementById('newWeeklyGoal');
+        const newMonthlyGoal = document.getElementById('newMonthlyGoal');
+        const newYearlyGoal = document.getElementById('newYearlyGoal');
+        
+        if (newWeeklyGoal) {
+            newWeeklyGoal.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.addGoal('weekly');
+                }
             });
         }
-        if (addMonthlyTask) {
-            addMonthlyTask.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.addGoalTask('monthly');
+        if (newMonthlyGoal) {
+            newMonthlyGoal.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.addGoal('monthly');
+                }
             });
         }
-        if (addYearlyTask) {
-            addYearlyTask.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.addGoalTask('yearly');
+        if (newYearlyGoal) {
+            newYearlyGoal.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.addGoal('yearly');
+                }
             });
         }
         
@@ -367,235 +302,93 @@ class UltimateDailyTracker {
         const addHabit = document.getElementById('addHabit');
         const newHabit = document.getElementById('newHabit');
         
-        if (addHabit) addHabit.addEventListener('click', () => this.addCustomHabit());
+        if (addHabit) addHabit.addEventListener('click', (e) => { e.preventDefault(); this.addCustomHabit(); });
         if (newHabit) {
             newHabit.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') this.addCustomHabit();
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.addCustomHabit();
+                }
             });
         }
         
-        // Auto-save for text areas
+        // Auto-save
         const dailyText = document.getElementById('dailyText');
-        if (dailyText) {
-            dailyText.addEventListener('input', () => this.scheduleAutoSave());
-        }
-        
-        // Enter key handlers for goal inputs
-        const newWeeklyTask = document.getElementById('newWeeklyTask');
-        const newMonthlyTask = document.getElementById('newMonthlyTask');
-        const newYearlyTask = document.getElementById('newYearlyTask');
-        
-        if (newWeeklyTask) {
-            newWeeklyTask.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this.addGoalTask('weekly');
-                }
-            });
-        }
-        if (newMonthlyTask) {
-            newMonthlyTask.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this.addGoalTask('monthly');
-                }
-            });
-        }
-        if (newYearlyTask) {
-            newYearlyTask.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this.addGoalTask('yearly');
-                }
-            });
-        }
+        if (dailyText) dailyText.addEventListener('input', () => this.autoSave());
         
         // Modal background clicks
-        this.setupModalCloseHandlers();
+        const dailyModal = document.getElementById('dailyModal');
+        const entryViewModal = document.getElementById('entryViewModal');
+        const exportModal = document.getElementById('exportModal');
+        const importModal = document.getElementById('importModal');
+        const settingsModal = document.getElementById('settingsModal');
+        
+        if (dailyModal) {
+            dailyModal.addEventListener('click', (e) => {
+                if (e.target.id === 'dailyModal') this.closeModal();
+            });
+        }
+        if (entryViewModal) {
+            entryViewModal.addEventListener('click', (e) => {
+                if (e.target.id === 'entryViewModal') this.closeEntryViewModal();
+            });
+        }
+        if (exportModal) {
+            exportModal.addEventListener('click', (e) => {
+                if (e.target.id === 'exportModal') this.closeExportModal();
+            });
+        }
+        if (importModal) {
+            importModal.addEventListener('click', (e) => {
+                if (e.target.id === 'importModal') this.closeImportModal();
+            });
+        }
+        if (settingsModal) {
+            settingsModal.addEventListener('click', (e) => {
+                if (e.target.id === 'settingsModal') this.closeSettings();
+            });
+        }
         
         console.log('Event listeners setup complete');
     }
     
-    setupModalCloseHandlers() {
-        const modals = ['dailyModal', 'entryViewModal', 'exportModal', 'syncSetupModal', 'jumpToModal', 'helpModal'];
-        modals.forEach(modalId => {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.addEventListener('click', (e) => {
-                    if (e.target.id === modalId) {
-                        this.closeModal(modalId);
-                    }
-                });
-            }
-        });
-    }
-    
-    setupKeyboardShortcuts() {
-        document.addEventListener('keydown', (e) => {
-            // Don't trigger shortcuts when typing in inputs
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-                if (e.ctrlKey && e.key === 's') {
-                    e.preventDefault();
-                    this.quickSave();
-                }
-                return;
-            }
-            
-            // Don't trigger when modals are open
-            if (document.querySelector('.modal:not(.hidden)')) {
-                if (e.key === 'Escape') {
-                    this.closeAllModals();
-                }
-                return;
-            }
-            
-            switch (e.key) {
-                case 'ArrowLeft':
-                    e.preventDefault();
-                    if (this.currentView === 'weekly') this.navigateWeek(-1);
-                    else if (this.currentView === 'monthly') this.navigateMonth(-1);
-                    else if (this.currentView === 'yearly') this.navigateYear(-1);
-                    break;
-                case 'ArrowRight':
-                    e.preventDefault();
-                    if (this.currentView === 'weekly') this.navigateWeek(1);
-                    else if (this.currentView === 'monthly') this.navigateMonth(1);
-                    else if (this.currentView === 'yearly') this.navigateYear(1);
-                    break;
-                case 'ArrowUp':
-                    e.preventDefault();
-                    this.switchToPreviousView();
-                    break;
-                case 'ArrowDown':
-                    e.preventDefault();
-                    this.switchToNextView();
-                    break;
-                case 'Enter':
-                    e.preventDefault();
-                    this.openTodayEntry();
-                    break;
-                case 'g':
-                case 'G':
-                    e.preventDefault();
-                    this.switchView('goals');
-                    break;
-                case 'j':
-                case 'J':
-                    e.preventDefault();
-                    this.openJumpToModal();
-                    break;
-                case 'e':
-                case 'E':
-                    e.preventDefault();
-                    this.openExportModal();
-                    break;
-                case 's':
-                case 'S':
-                    e.preventDefault();
-                    this.syncNow();
-                    break;
-                case 'Escape':
-                    this.closeAllModals();
-                    break;
-            }
-        });
-    }
-    
-    displayMotivationalQuote() {
-        const today = new Date().toDateString();
-        const storedQuoteDate = localStorage.getItem('dailyQuoteDate');
-        const storedQuoteIndex = localStorage.getItem('dailyQuoteIndex');
-        
-        let quoteIndex;
-        if (storedQuoteDate === today && storedQuoteIndex !== null) {
-            quoteIndex = parseInt(storedQuoteIndex);
-        } else {
-            // Generate a consistent quote index based on the date
-            const dateStr = this.formatDate(new Date());
-            quoteIndex = this.hashCode(dateStr) % this.motivationalQuotes.length;
-            localStorage.setItem('dailyQuoteDate', today);
-            localStorage.setItem('dailyQuoteIndex', quoteIndex.toString());
-        }
-        
-        const quote = this.motivationalQuotes[quoteIndex];
-        const quoteElement = document.getElementById('dailyQuote');
-        const authorElement = document.getElementById('quoteAuthor');
-        
-        if (quoteElement && authorElement) {
-            quoteElement.textContent = `"${quote.quote}"`;
-            authorElement.textContent = `— ${quote.author}`;
-        }
-    }
-    
-    hashCode(str) {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // Convert to 32bit integer
-        }
-        return Math.abs(hash);
-    }
-    
-    // Navigation Methods - FIXED: Proper view switching
     switchView(view) {
-        console.log(`Switching to view: ${view}`);
+        console.log('Switching to view:', view);
         
         // Update active tab
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('tab-btn--active'));
-        const targetTab = document.getElementById(`${view}Tab`);
-        if (targetTab) {
-            targetTab.classList.add('tab-btn--active');
+        const activeTab = document.getElementById(`${view}Tab`);
+        if (activeTab) {
+            activeTab.classList.add('tab-btn--active');
+            console.log(`Activated tab: ${view}Tab`);
         }
         
         // Hide all views
-        document.querySelectorAll('.main-view').forEach(viewEl => viewEl.classList.add('hidden'));
+        const allViews = document.querySelectorAll('.main-view');
+        console.log('Found views:', allViews.length);
+        allViews.forEach(viewEl => {
+            if (viewEl) {
+                viewEl.classList.add('hidden');
+                console.log('Hidden view:', viewEl.id);
+            }
+        });
         
         // Show selected view
         const targetView = document.getElementById(`${view}View`);
         if (targetView) {
             targetView.classList.remove('hidden');
+            console.log(`Showed view: ${view}View`);
+        } else {
+            console.error(`Target view not found: ${view}View`);
         }
         
         this.currentView = view;
         this.renderCurrentView();
     }
     
-    switchGoalsView(view) {
-        console.log(`Switching to goals view: ${view}`);
-        
-        document.querySelectorAll('.goals-tab').forEach(btn => btn.classList.remove('goals-tab--active'));
-        const targetTab = document.getElementById(`${view}GoalsTab`);
-        if (targetTab) {
-            targetTab.classList.add('goals-tab--active');
-        }
-        
-        document.querySelectorAll('.goals-section').forEach(section => section.classList.add('hidden'));
-        const targetSection = document.getElementById(`${view}GoalsSection`);
-        if (targetSection) {
-            targetSection.classList.remove('hidden');
-        }
-        
-        this.currentGoalsView = view;
-        this.renderGoals();
-    }
-    
-    switchToPreviousView() {
-        const views = ['weekly', 'monthly', 'yearly', 'goals'];
-        const currentIndex = views.indexOf(this.currentView);
-        const previousIndex = currentIndex > 0 ? currentIndex - 1 : views.length - 1;
-        this.switchView(views[previousIndex]);
-    }
-    
-    switchToNextView() {
-        const views = ['weekly', 'monthly', 'yearly', 'goals'];
-        const currentIndex = views.indexOf(this.currentView);
-        const nextIndex = currentIndex < views.length - 1 ? currentIndex + 1 : 0;
-        this.switchView(views[nextIndex]);
-    }
-    
     renderCurrentView() {
-        console.log(`Rendering current view: ${this.currentView}`);
+        console.log('Rendering view:', this.currentView);
+        
         switch(this.currentView) {
             case 'weekly':
                 this.renderWeeklyCalendar();
@@ -605,12 +398,340 @@ class UltimateDailyTracker {
                 this.renderMonthlyCalendar();
                 this.renderMonthlySummary();
                 break;
-            case 'yearly':
-                this.renderYearlyCalendar();
-                break;
             case 'goals':
                 this.renderGoals();
                 break;
+        }
+    }
+    
+    // Goals Management
+    renderGoals() {
+        console.log('Rendering goals view');
+        this.renderGoalSection('weekly');
+        this.renderGoalSection('monthly');
+        this.renderGoalSection('yearly');
+    }
+
+    renderGoalSection(type) {
+        const goalsList = document.getElementById(`${type}GoalsList`);
+        const progressElement = document.getElementById(`${type}Progress`);
+        
+        console.log(`Rendering ${type} goals. List element:`, goalsList, 'Progress element:', progressElement);
+        
+        if (!goalsList || !progressElement) {
+            console.log(`Missing elements for ${type} goals`);
+            return;
+        }
+
+        goalsList.innerHTML = '';
+        const goals = this.goals[type] || [];
+        const completedCount = goals.filter(goal => goal.completed).length;
+        
+        // Update progress
+        progressElement.textContent = `${completedCount}/${goals.length} completed`;
+        
+        goals.forEach(goal => {
+            const goalItem = document.createElement('div');
+            goalItem.className = `goal-item ${goal.completed ? 'completed' : ''}`;
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'goal-checkbox';
+            checkbox.checked = goal.completed;
+            checkbox.addEventListener('change', (e) => {
+                e.stopPropagation();
+                this.toggleGoal(type, goal.id);
+            });
+            
+            const text = document.createElement('div');
+            text.className = 'goal-text';
+            text.textContent = goal.text;
+            text.addEventListener('click', (e) => {
+                e.stopPropagation();
+                checkbox.checked = !checkbox.checked;
+                this.toggleGoal(type, goal.id);
+            });
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'goal-remove';
+            removeBtn.innerHTML = '×';
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.removeGoal(type, goal.id);
+            });
+            
+            goalItem.appendChild(checkbox);
+            goalItem.appendChild(text);
+            goalItem.appendChild(removeBtn);
+            goalsList.appendChild(goalItem);
+        });
+        
+        console.log(`Rendered ${goals.length} ${type} goals`);
+    }
+
+    addGoal(type) {
+        const input = document.getElementById(`new${type.charAt(0).toUpperCase() + type.slice(1)}Goal`);
+        if (!input) return;
+        
+        const goalText = input.value.trim();
+        if (!goalText) return;
+        
+        const newGoal = {
+            id: `${type.charAt(0)}${Date.now()}`,
+            text: goalText,
+            completed: false
+        };
+        
+        if (!this.goals[type]) {
+            this.goals[type] = [];
+        }
+        
+        this.goals[type].push(newGoal);
+        input.value = '';
+        this.saveData();
+        this.renderGoalSection(type);
+        this.showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} goal added!`, 'success');
+    }
+
+    toggleGoal(type, goalId) {
+        const goal = this.goals[type].find(g => g.id === goalId);
+        if (goal) {
+            goal.completed = !goal.completed;
+            this.saveData();
+            this.renderGoalSection(type);
+            
+            const status = goal.completed ? 'completed' : 'uncompleted';
+            this.showToast(`Goal ${status}!`, 'success');
+        }
+    }
+
+    removeGoal(type, goalId) {
+        this.goals[type] = this.goals[type].filter(g => g.id !== goalId);
+        this.saveData();
+        this.renderGoalSection(type);
+        this.showToast('Goal removed!', 'success');
+    }
+
+    // GitHub Gist Sync
+    loadGitHubSettings() {
+        const stored = localStorage.getItem('githubSyncSettings');
+        if (stored) {
+            this.githubSettings = { ...this.githubSettings, ...JSON.parse(stored) };
+            this.updateSyncUI();
+        }
+    }
+
+    saveGitHubSettings() {
+        const token = document.getElementById('githubToken')?.value.trim();
+        const gistId = document.getElementById('gistId')?.value.trim();
+        
+        if (!token) {
+            this.showToast('Please enter a GitHub Personal Access Token', 'error');
+            return;
+        }
+        
+        this.githubSettings.token = token;
+        this.githubSettings.gistId = gistId;
+        this.githubSettings.autoSync = true;
+        
+        localStorage.setItem('githubSyncSettings', JSON.stringify(this.githubSettings));
+        this.updateSyncUI();
+        this.setupAutoSync();
+        this.closeSettings();
+        this.showToast('GitHub sync settings saved!', 'success');
+    }
+
+    async testGitHubConnection() {
+        const token = document.getElementById('githubToken')?.value.trim();
+        
+        if (!token) {
+            this.showToast('Please enter a GitHub token first', 'error');
+            return;
+        }
+        
+        try {
+            const response = await fetch('https://api.github.com/user', {
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            
+            if (response.ok) {
+                const user = await response.json();
+                this.showToast(`Connected as ${user.login}!`, 'success');
+            } else {
+                this.showToast('Invalid token or connection failed', 'error');
+            }
+        } catch (error) {
+            this.showToast('Connection test failed', 'error');
+        }
+    }
+
+    setupAutoSync() {
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+        }
+        
+        if (this.githubSettings.autoSync && this.githubSettings.token) {
+            this.syncInterval = setInterval(() => {
+                if (!this.syncInProgress) {
+                    this.syncToGist();
+                }
+            }, 30000); // Sync every 30 seconds
+        }
+    }
+
+    debouncedSync = this.debounce(() => {
+        if (this.githubSettings.autoSync && !this.syncInProgress) {
+            this.syncToGist();
+        }
+    }, 2000);
+
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    async manualSync() {
+        if (!this.githubSettings.token) {
+            this.openSettings();
+            this.showToast('Please configure GitHub sync first', 'error');
+            return;
+        }
+        
+        await this.syncToGist();
+    }
+
+    async syncToGist() {
+        if (this.syncInProgress) return;
+        
+        this.syncInProgress = true;
+        this.updateSyncStatus('Syncing...', 'syncing');
+        
+        try {
+            const data = {
+                entries: this.entries,
+                customHabits: this.customHabits,
+                habitColors: this.habitColors,
+                goals: this.goals,
+                syncTime: new Date().toISOString(),
+                version: "3.0.0"
+            };
+            
+            const gistData = {
+                description: "Daily Activity Tracker - Amit's Data",
+                public: false,
+                files: {
+                    "daily-tracker-data.json": {
+                        content: JSON.stringify(data, null, 2)
+                    }
+                }
+            };
+            
+            let response;
+            if (this.githubSettings.gistId) {
+                // Update existing gist
+                response = await fetch(`https://api.github.com/gists/${this.githubSettings.gistId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `token ${this.githubSettings.token}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(gistData)
+                });
+            } else {
+                // Create new gist
+                response = await fetch('https://api.github.com/gists', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `token ${this.githubSettings.token}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(gistData)
+                });
+            }
+            
+            if (response.ok) {
+                const gist = await response.json();
+                if (!this.githubSettings.gistId) {
+                    this.githubSettings.gistId = gist.id;
+                    localStorage.setItem('githubSyncSettings', JSON.stringify(this.githubSettings));
+                }
+                
+                this.githubSettings.lastSync = new Date().toISOString();
+                localStorage.setItem('githubSyncSettings', JSON.stringify(this.githubSettings));
+                
+                this.updateSyncStatus('Synced successfully', 'success');
+                this.updateSyncUI();
+            } else {
+                throw new Error('Sync failed');
+            }
+        } catch (error) {
+            console.error('Sync error:', error);
+            this.updateSyncStatus('Sync failed', 'error');
+        } finally {
+            this.syncInProgress = false;
+            setTimeout(() => this.hideSyncStatus(), 3000);
+        }
+    }
+
+    updateSyncStatus(message, type) {
+        const statusElement = document.getElementById('syncStatus');
+        const textElement = document.getElementById('syncStatusText');
+        
+        if (statusElement && textElement) {
+            textElement.textContent = message;
+            statusElement.className = `sync-status ${type}`;
+            statusElement.classList.remove('hidden');
+        }
+    }
+
+    hideSyncStatus() {
+        const statusElement = document.getElementById('syncStatus');
+        if (statusElement) {
+            statusElement.classList.add('hidden');
+        }
+    }
+
+    updateSyncUI() {
+        const syncBtn = document.getElementById('syncBtn');
+        const syncIcon = document.getElementById('syncIcon');
+        const autoSyncStatus = document.getElementById('autoSyncStatus');
+        const lastSyncTime = document.getElementById('lastSyncTime');
+        
+        if (syncBtn && syncIcon) {
+            if (this.githubSettings.autoSync && this.githubSettings.token) {
+                syncBtn.classList.remove('btn--outline');
+                syncBtn.classList.add('btn--primary');
+                syncIcon.textContent = '☁️';
+            } else {
+                syncBtn.classList.add('btn--outline');
+                syncBtn.classList.remove('btn--primary');
+                syncIcon.textContent = '☁️';
+            }
+        }
+        
+        if (autoSyncStatus) {
+            autoSyncStatus.textContent = this.githubSettings.autoSync ? 'Enabled' : 'Disabled';
+        }
+        
+        if (lastSyncTime) {
+            if (this.githubSettings.lastSync) {
+                const syncDate = new Date(this.githubSettings.lastSync);
+                lastSyncTime.textContent = syncDate.toLocaleString();
+            } else {
+                lastSyncTime.textContent = 'Never';
+            }
         }
     }
     
@@ -620,14 +741,6 @@ class UltimateDailyTracker {
         const day = d.getDay();
         const diff = d.getDate() - day;
         return new Date(d.setDate(diff));
-    }
-    
-    getWeekNumber(date) {
-        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-        const dayNum = d.getUTCDay() || 7;
-        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
     }
     
     navigateWeek(direction) {
@@ -644,15 +757,15 @@ class UltimateDailyTracker {
         
         if (!weekRange || !calendarDays) return;
         
+        // Update week range display
         const weekEnd = new Date(this.currentWeekStart);
         weekEnd.setDate(weekEnd.getDate() + 6);
         weekRange.textContent = `${this.formatDateDisplay(this.currentWeekStart)} - ${this.formatDateDisplay(weekEnd)}`;
         
-        // Update week stats
-        this.updateWeekStats();
-        
+        // Clear previous days
         calendarDays.innerHTML = '';
         
+        // Create 7 days
         for (let i = 0; i < 7; i++) {
             const date = new Date(this.currentWeekStart);
             date.setDate(date.getDate() + i);
@@ -660,69 +773,6 @@ class UltimateDailyTracker {
         }
         
         this.highlightToday();
-    }
-    
-    updateWeekStats() {
-        const weekScore = this.calculateWeekScore();
-        const weekStreak = this.calculateCurrentStreak();
-        
-        const weekScoreEl = document.getElementById('weekScore');
-        const weekStreakEl = document.getElementById('weekStreak');
-        
-        if (weekScoreEl) weekScoreEl.textContent = `Score: ${weekScore}%`;
-        if (weekStreakEl) weekStreakEl.textContent = `🔥 Streak: ${weekStreak} days`;
-    }
-    
-    calculateWeekScore() {
-        let totalDays = 0;
-        let completedDays = 0;
-        
-        for (let i = 0; i < 7; i++) {
-            const date = new Date(this.currentWeekStart);
-            date.setDate(date.getDate() + i);
-            
-            if (date <= new Date()) {
-                totalDays++;
-                const dateString = this.formatDate(date);
-                const entry = this.entries[dateString];
-                
-                if (entry && entry.habits) {
-                    const habitCount = Object.keys(entry.habits).length;
-                    const completedHabits = Object.values(entry.habits).filter(Boolean).length;
-                    if (habitCount > 0 && completedHabits / habitCount >= 0.6) {
-                        completedDays++;
-                    }
-                }
-            }
-        }
-        
-        return totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
-    }
-    
-    calculateCurrentStreak() {
-        let streak = 0;
-        const today = new Date();
-        let currentDate = new Date(today);
-        
-        while (currentDate) {
-            const dateString = this.formatDate(currentDate);
-            const entry = this.entries[dateString];
-            
-            if (entry && entry.habits) {
-                const habitCount = Object.keys(entry.habits).length;
-                const completedHabits = Object.values(entry.habits).filter(Boolean).length;
-                if (habitCount > 0 && completedHabits / habitCount >= 0.5) {
-                    streak++;
-                    currentDate.setDate(currentDate.getDate() - 1);
-                } else {
-                    break;
-                }
-            } else {
-                break;
-            }
-        }
-        
-        return streak;
     }
     
     createWeeklyDayElement(date) {
@@ -735,23 +785,25 @@ class UltimateDailyTracker {
             dayElement.classList.add('today');
         }
         
+        // Day number
         const dayNumber = document.createElement('div');
         dayNumber.className = 'day-number';
         dayNumber.textContent = date.getDate();
         dayElement.appendChild(dayNumber);
         
+        // Entry preview
         if (this.entries[dateString]) {
             const preview = document.createElement('div');
             preview.className = 'day-preview';
             const text = this.entries[dateString].text;
-            // Show full text in weekly view (no truncation)
-            preview.textContent = text;
+            preview.textContent = text.length > 80 ? text.substring(0, 80) + '...' : text;
             preview.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.openEntryView(date);
             });
             dayElement.appendChild(preview);
             
+            // Habits indicator with colors
             const habits = this.entries[dateString].habits || {};
             const completedHabits = Object.keys(habits).filter(habit => habits[habit]);
             
@@ -771,9 +823,9 @@ class UltimateDailyTracker {
             }
         }
         
-        // FIXED: Proper event listener binding
+        // Click handler
         dayElement.addEventListener('click', (e) => {
-            console.log(`Calendar day clicked: ${dateString}`);
+            e.stopPropagation();
             this.openDayEntry(date);
         });
         
@@ -795,42 +847,35 @@ class UltimateDailyTracker {
         
         if (!monthYear || !monthlyCalendarDays) return;
         
+        // Update month/year display
         monthYear.textContent = this.currentMonth.toLocaleDateString('en-US', { 
             month: 'long', 
             year: 'numeric' 
         });
         
-        this.updateMonthStats();
-        
+        // Clear previous days
         monthlyCalendarDays.innerHTML = '';
         
+        // Get first day of month and how many days
         const firstDay = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth(), 1);
         const lastDay = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth() + 1, 0);
         const daysInMonth = lastDay.getDate();
         const startDay = firstDay.getDay();
         
+        // Add empty cells for days before month starts
         for (let i = 0; i < startDay; i++) {
             const emptyDay = document.createElement('div');
             emptyDay.className = 'monthly-day other-month';
             monthlyCalendarDays.appendChild(emptyDay);
         }
         
+        // Add days of the month
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth(), day);
             monthlyCalendarDays.appendChild(this.createMonthlyDayElement(date));
         }
         
         this.highlightToday();
-    }
-    
-    updateMonthStats() {
-        const stats = this.calculateMonthlyStats(this.currentMonth, new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth() + 1, 0));
-        
-        const monthEntriesEl = document.getElementById('monthEntries');
-        const monthStreakEl = document.getElementById('monthStreak');
-        
-        if (monthEntriesEl) monthEntriesEl.textContent = `📝 ${stats.totalEntries} entries`;
-        if (monthStreakEl) monthStreakEl.textContent = `🔥 Best streak: ${stats.bestStreak} days`;
     }
     
     createMonthlyDayElement(date) {
@@ -843,23 +888,14 @@ class UltimateDailyTracker {
             dayElement.classList.add('today');
         }
         
+        // Day number
         const dayNumber = document.createElement('div');
         dayNumber.className = 'day-number';
         dayNumber.textContent = date.getDate();
         dayElement.appendChild(dayNumber);
         
+        // Habits indicator
         if (this.entries[dateString]) {
-            const preview = document.createElement('div');
-            preview.className = 'day-preview';
-            const text = this.entries[dateString].text;
-            // Show limited preview in monthly view (50-100 characters)
-            preview.textContent = text.length > 80 ? text.substring(0, 80) + '...' : text;
-            preview.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.openEntryView(date);
-            });
-            dayElement.appendChild(preview);
-            
             const habits = this.entries[dateString].habits || {};
             const completedHabits = Object.keys(habits).filter(habit => habits[habit]);
             
@@ -867,7 +903,7 @@ class UltimateDailyTracker {
                 const indicator = document.createElement('div');
                 indicator.className = 'habits-indicator';
                 
-                completedHabits.slice(0, 8).forEach(habit => {
+                completedHabits.slice(0, 6).forEach(habit => {
                     const dot = document.createElement('div');
                     dot.className = 'habit-dot';
                     dot.style.backgroundColor = this.habitColors[habit] || this.getRandomColor();
@@ -879,7 +915,12 @@ class UltimateDailyTracker {
             }
         }
         
-        dayElement.addEventListener('click', () => this.openDayEntry(date));
+        // Click handler
+        dayElement.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.openDayEntry(date);
+        });
+        
         return dayElement;
     }
     
@@ -889,35 +930,39 @@ class UltimateDailyTracker {
         
         summaryContent.innerHTML = '';
         
+        // Calculate monthly stats
         const monthStart = new Date(this.currentMonth);
         const monthEnd = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth() + 1, 0);
         const stats = this.calculateMonthlyStats(monthStart, monthEnd);
         
+        // Total entries
         const totalEntries = document.createElement('div');
         totalEntries.className = 'summary-stat';
         totalEntries.innerHTML = `
-            <span class="summary-label">📝 Total Entries</span>
+            <span class="summary-label">Total Entries</span>
             <span class="summary-value">${stats.totalEntries}</span>
         `;
         summaryContent.appendChild(totalEntries);
         
+        // Most consistent habit
         if (stats.topHabit) {
             const topHabit = document.createElement('div');
             topHabit.className = 'summary-stat';
             topHabit.innerHTML = `
-                <span class="summary-label">🏆 Most Consistent Habit</span>
-                <span class="summary-value">${stats.topHabit.name} (${stats.topHabit.count})</span>
+                <span class="summary-label">Most Consistent Habit</span>
+                <span class="summary-value">${stats.topHabit.name} (${stats.topHabit.count} days)</span>
             `;
             summaryContent.appendChild(topHabit);
         }
         
-        const bestStreak = document.createElement('div');
-        bestStreak.className = 'summary-stat';
-        bestStreak.innerHTML = `
-            <span class="summary-label">🔥 Best Streak</span>
-            <span class="summary-value">${stats.bestStreak} days</span>
+        // Average entry length
+        const avgLength = document.createElement('div');
+        avgLength.className = 'summary-stat';
+        avgLength.innerHTML = `
+            <span class="summary-label">Average Entry Length</span>
+            <span class="summary-value">${stats.avgEntryLength} words</span>
         `;
-        summaryContent.appendChild(bestStreak);
+        summaryContent.appendChild(avgLength);
     }
     
     calculateMonthlyStats(startDate, endDate) {
@@ -926,7 +971,7 @@ class UltimateDailyTracker {
             totalWords: 0,
             habitCounts: {},
             topHabit: null,
-            bestStreak: 0
+            avgEntryLength: 0
         };
         
         const current = new Date(startDate);
@@ -952,6 +997,7 @@ class UltimateDailyTracker {
             current.setDate(current.getDate() + 1);
         }
         
+        // Find top habit
         let maxCount = 0;
         Object.keys(stats.habitCounts).forEach(habit => {
             if (stats.habitCounts[habit] > maxCount) {
@@ -960,451 +1006,48 @@ class UltimateDailyTracker {
             }
         });
         
-        stats.bestStreak = this.calculateBestStreakInMonth(startDate, endDate);
+        stats.avgEntryLength = stats.totalEntries > 0 ? 
+            Math.round(stats.totalWords / stats.totalEntries) : 0;
         
         return stats;
     }
     
-    calculateBestStreakInMonth(startDate, endDate) {
-        let bestStreak = 0;
-        let currentStreak = 0;
+    // Habit Legend
+    renderHabitLegend() {
+        const habitColors = document.getElementById('habitColors');
+        if (!habitColors) return;
         
-        const current = new Date(startDate);
-        while (current <= endDate) {
-            const dateString = this.formatDate(current);
-            const entry = this.entries[dateString];
+        habitColors.innerHTML = '';
+        const allHabits = [...this.defaultHabits, ...this.customHabits];
+        
+        allHabits.forEach(habit => {
+            const colorItem = document.createElement('div');
+            colorItem.className = 'habit-color-item';
             
-            if (entry && entry.habits) {
-                const habitCount = Object.keys(entry.habits).length;
-                const completedHabits = Object.values(entry.habits).filter(Boolean).length;
-                if (habitCount > 0 && completedHabits / habitCount >= 0.5) {
-                    currentStreak++;
-                    bestStreak = Math.max(bestStreak, currentStreak);
-                } else {
-                    currentStreak = 0;
-                }
-            } else {
-                currentStreak = 0;
-            }
+            const dot = document.createElement('div');
+            dot.className = 'habit-color-dot';
+            dot.style.backgroundColor = this.habitColors[habit] || this.getRandomColor();
             
-            current.setDate(current.getDate() + 1);
-        }
-        
-        return bestStreak;
-    }
-    
-    // Yearly Calendar Methods
-    navigateYear(direction) {
-        this.currentYear += direction;
-        this.renderYearlyCalendar();
-    }
-    
-    renderYearlyCalendar() {
-        const yearTitle = document.getElementById('yearTitle');
-        const yearlyCalendar = document.getElementById('yearlyCalendar');
-        
-        if (!yearTitle || !yearlyCalendar) return;
-        
-        yearTitle.textContent = `${this.currentYear} - Year Overview`;
-        this.updateYearStats();
-        
-        yearlyCalendar.innerHTML = '';
-        
-        for (let month = 0; month < 12; month++) {
-            const monthElement = this.createYearlyMonthElement(month);
-            yearlyCalendar.appendChild(monthElement);
-        }
-    }
-    
-    updateYearStats() {
-        const yearStats = this.calculateYearlyStats();
-        
-        const yearEntriesEl = document.getElementById('yearEntries');
-        const yearBestStreakEl = document.getElementById('yearBestStreak');
-        const yearGoalsEl = document.getElementById('yearGoals');
-        
-        if (yearEntriesEl) yearEntriesEl.textContent = `📝 ${yearStats.totalEntries} entries`;
-        if (yearBestStreakEl) yearBestStreakEl.textContent = `🔥 Best streak: ${yearStats.bestStreak} days`;
-        if (yearGoalsEl) yearGoalsEl.textContent = `🎯 ${yearStats.completedGoals}/${yearStats.totalGoals} goals completed`;
-    }
-    
-    calculateYearlyStats() {
-        let totalEntries = 0;
-        let bestStreak = 0;
-        let currentStreak = 0;
-        
-        const startDate = new Date(this.currentYear, 0, 1);
-        const endDate = new Date(this.currentYear, 11, 31);
-        const current = new Date(startDate);
-        
-        while (current <= endDate) {
-            const dateString = this.formatDate(current);
-            const entry = this.entries[dateString];
+            const name = document.createElement('div');
+            name.className = 'habit-color-name';
+            name.textContent = habit;
             
-            if (entry) {
-                totalEntries++;
-                if (entry.habits) {
-                    const habitCount = Object.keys(entry.habits).length;
-                    const completedHabits = Object.values(entry.habits).filter(Boolean).length;
-                    if (habitCount > 0 && completedHabits / habitCount >= 0.5) {
-                        currentStreak++;
-                        bestStreak = Math.max(bestStreak, currentStreak);
-                    } else {
-                        currentStreak = 0;
-                    }
-                }
-            } else {
-                currentStreak = 0;
-            }
-            
-            current.setDate(current.getDate() + 1);
-        }
-        
-        // Calculate goal completion
-        const yearlyGoals = this.goals.yearly[this.currentYear.toString()];
-        const completedGoals = yearlyGoals ? yearlyGoals.tasks.filter(task => task.completed).length : 0;
-        const totalGoals = yearlyGoals ? yearlyGoals.tasks.length : 0;
-        
-        return { totalEntries, bestStreak, completedGoals, totalGoals };
-    }
-    
-    createYearlyMonthElement(monthIndex) {
-        const monthElement = document.createElement('div');
-        monthElement.className = 'yearly-month';
-        
-        const monthDate = new Date(this.currentYear, monthIndex, 1);
-        const monthName = monthDate.toLocaleDateString('en-US', { month: 'long' });
-        
-        const header = document.createElement('div');
-        header.className = 'yearly-month-header';
-        header.textContent = monthName;
-        monthElement.appendChild(header);
-        
-        const grid = document.createElement('div');
-        grid.className = 'yearly-month-grid';
-        
-        // Add day headers
-        const dayHeaders = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-        dayHeaders.forEach(day => {
-            const header = document.createElement('div');
-            header.className = 'yearly-day-header';
-            header.textContent = day;
-            grid.appendChild(header);
-        });
-        
-        // Add empty cells for days before month starts
-        const firstDay = new Date(this.currentYear, monthIndex, 1);
-        const startDay = firstDay.getDay();
-        for (let i = 0; i < startDay; i++) {
-            const emptyDay = document.createElement('div');
-            emptyDay.className = 'yearly-day other-month';
-            grid.appendChild(emptyDay);
-        }
-        
-        // Add days of the month
-        const daysInMonth = new Date(this.currentYear, monthIndex + 1, 0).getDate();
-        for (let day = 1; day <= daysInMonth; day++) {
-            const date = new Date(this.currentYear, monthIndex, day);
-            const dayElement = this.createYearlyDayElement(date);
-            grid.appendChild(dayElement);
-        }
-        
-        monthElement.appendChild(grid);
-        return monthElement;
-    }
-    
-    createYearlyDayElement(date) {
-        const dateString = this.formatDate(date);
-        const dayElement = document.createElement('div');
-        dayElement.className = 'yearly-day';
-        dayElement.textContent = date.getDate();
-        dayElement.setAttribute('data-date', dateString);
-        
-        if (date.toDateString() === new Date().toDateString()) {
-            dayElement.classList.add('today');
-        }
-        
-        if (this.entries[dateString]) {
-            dayElement.classList.add('has-entry');
-            const habits = this.entries[dateString].habits || {};
-            const completedHabits = Object.values(habits).filter(Boolean).length;
-            const totalHabits = Object.keys(habits).length;
-            
-            if (totalHabits > 0) {
-                const completion = completedHabits / totalHabits;
-                if (completion >= 0.8) {
-                    dayElement.style.backgroundColor = '#10B981'; // Green
-                } else if (completion >= 0.5) {
-                    dayElement.style.backgroundColor = '#F59E0B'; // Yellow
-                } else {
-                    dayElement.style.backgroundColor = '#EF4444'; // Red
-                }
-            }
-        }
-        
-        dayElement.addEventListener('click', () => this.openDayEntry(date));
-        return dayElement;
-    }
-    
-    // Goals Management - FIXED
-    setupGoalsSelectors() {
-        console.log('Setting up goals selectors...');
-        this.setupWeekSelector();
-        this.setupMonthSelector();
-        this.setupYearSelector();
-    }
-    
-    setupWeekSelector() {
-        const weekSelector = document.getElementById('weekGoalSelector');
-        if (!weekSelector) return;
-        
-        weekSelector.innerHTML = '';
-        
-        // Add current week and surrounding weeks
-        for (let i = -4; i <= 4; i++) {
-            const weekStart = new Date(this.currentWeekStart);
-            weekStart.setDate(weekStart.getDate() + (i * 7));
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekEnd.getDate() + 6);
-            const weekNumber = this.getWeekNumber(weekStart);
-            const weekKey = `${weekStart.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}`;
-            
-            const option = document.createElement('option');
-            option.value = weekKey;
-            option.textContent = `Week ${weekNumber} (${this.formatDateDisplay(weekStart)} - ${this.formatDateDisplay(weekEnd)})`;
-            
-            if (i === 0) option.selected = true;
-            weekSelector.appendChild(option);
-        }
-        
-        weekSelector.addEventListener('change', () => this.loadWeeklyGoals());
-    }
-    
-    setupMonthSelector() {
-        const monthSelector = document.getElementById('monthGoalSelector');
-        if (!monthSelector) return;
-        
-        monthSelector.innerHTML = '';
-        for (let i = -6; i <= 6; i++) {
-            const date = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() + i, 1);
-            const option = document.createElement('option');
-            option.value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            option.textContent = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-            if (i === 0) {
-                option.selected = true;
-            }
-            monthSelector.appendChild(option);
-        }
-        
-        monthSelector.addEventListener('change', () => this.loadMonthlyGoals());
-    }
-    
-    setupYearSelector() {
-        const yearSelector = document.getElementById('yearGoalSelector');
-        if (!yearSelector) return;
-        
-        yearSelector.innerHTML = '';
-        const currentYear = this.currentDate.getFullYear();
-        for (let year = currentYear - 2; year <= currentYear + 5; year++) {
-            const option = document.createElement('option');
-            option.value = year.toString();
-            option.textContent = year.toString();
-            if (year === currentYear) {
-                option.selected = true;
-            }
-            yearSelector.appendChild(option);
-        }
-        
-        yearSelector.addEventListener('change', () => this.loadYearlyGoals());
-    }
-    
-    renderGoals() {
-        console.log(`Rendering goals for ${this.currentGoalsView}`);
-        switch(this.currentGoalsView) {
-            case 'weekly':
-                this.loadWeeklyGoals();
-                break;
-            case 'monthly':
-                this.loadMonthlyGoals();
-                break;
-            case 'yearly':
-                this.loadYearlyGoals();
-                break;
-        }
-    }
-    
-    loadWeeklyGoals() {
-        const selector = document.getElementById('weekGoalSelector');
-        const tasksList = document.getElementById('weeklyTasksList');
-        
-        if (!selector || !tasksList) return;
-        
-        const weekKey = selector.value;
-        const goals = this.goals.weekly[weekKey] || { title: selector.options[selector.selectedIndex].text, tasks: [] };
-        
-        this.renderTasksList(tasksList, goals.tasks, 'weekly', weekKey);
-    }
-    
-    loadMonthlyGoals() {
-        const selector = document.getElementById('monthGoalSelector');
-        const tasksList = document.getElementById('monthlyTasksList');
-        
-        if (!selector || !tasksList) return;
-        
-        const monthKey = selector.value;
-        const goals = this.goals.monthly[monthKey] || { title: selector.options[selector.selectedIndex].text, tasks: [] };
-        
-        this.renderTasksList(tasksList, goals.tasks, 'monthly', monthKey);
-    }
-    
-    loadYearlyGoals() {
-        const selector = document.getElementById('yearGoalSelector');
-        const tasksList = document.getElementById('yearlyTasksList');
-        
-        if (!selector || !tasksList) return;
-        
-        const yearKey = selector.value;
-        const goals = this.goals.yearly[yearKey] || { title: yearKey, tasks: [] };
-        
-        this.renderTasksList(tasksList, goals.tasks, 'yearly', yearKey);
-    }
-    
-    renderTasksList(container, tasks, period, key) {
-        container.innerHTML = '';
-        
-        if (tasks.length === 0) {
-            const emptyState = document.createElement('div');
-            emptyState.className = 'empty-state';
-            emptyState.innerHTML = `
-                <p>No goals set for this ${period} period yet.</p>
-                <p>Add your first goal below! 🎯</p>
-            `;
-            container.appendChild(emptyState);
-            return;
-        }
-        
-        const completedTasks = tasks.filter(task => task.completed).length;
-        const progressBar = document.createElement('div');
-        progressBar.className = 'progress-bar';
-        progressBar.innerHTML = `
-            <div class="progress-header">
-                <span>Progress: ${completedTasks}/${tasks.length} goals completed</span>
-                <span>${Math.round((completedTasks / tasks.length) * 100)}%</span>
-            </div>
-            <div class="progress-track">
-                <div class="progress-fill" style="width: ${(completedTasks / tasks.length) * 100}%"></div>
-            </div>
-        `;
-        container.appendChild(progressBar);
-        
-        tasks.forEach(task => {
-            const taskElement = this.createTaskElement(task, period, key);
-            container.appendChild(taskElement);
+            colorItem.appendChild(dot);
+            colorItem.appendChild(name);
+            habitColors.appendChild(colorItem);
         });
     }
     
-    createTaskElement(task, period, key) {
-        const taskItem = document.createElement('div');
-        taskItem.className = `task-item ${task.completed ? 'completed' : ''}`;
-        
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.className = 'task-checkbox';
-        checkbox.checked = task.completed;
-        checkbox.addEventListener('change', () => this.toggleTask(task.id, period, key));
-        
-        const taskText = document.createElement('span');
-        taskText.className = 'task-text';
-        taskText.textContent = task.text;
-        
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'task-remove';
-        removeBtn.textContent = '×';
-        removeBtn.addEventListener('click', () => this.removeTask(task.id, period, key));
-        
-        taskItem.appendChild(checkbox);
-        taskItem.appendChild(taskText);
-        taskItem.appendChild(removeBtn);
-        
-        return taskItem;
+    getRandomColor() {
+        return this.availableColors[Math.floor(Math.random() * this.availableColors.length)];
     }
     
-    // FIXED: Goal task management
-    addGoalTask(period) {
-        console.log(`Adding ${period} goal task`);
-        
-        const input = document.getElementById(`new${period.charAt(0).toUpperCase() + period.slice(1)}Task`);
-        const selector = document.getElementById(`${period === 'weekly' ? 'week' : period}GoalSelector`);
-        
-        if (!input || !selector) {
-            console.error('Input or selector not found for', period);
-            return;
-        }
-        
-        const taskText = input.value.trim();
-        if (!taskText) {
-            this.showToast('Please enter a goal description', 'warning');
-            return;
-        }
-        
-        const key = selector.value;
-        if (!this.goals[period][key]) {
-            this.goals[period][key] = {
-                title: selector.options[selector.selectedIndex].text,
-                tasks: []
-            };
-        }
-        
-        const newTask = {
-            id: Date.now().toString(),
-            text: taskText,
-            completed: false
-        };
-        
-        this.goals[period][key].tasks.push(newTask);
-        input.value = '';
-        this.saveData();
-        this.renderGoals();
-        this.showToast(`${period.charAt(0).toUpperCase() + period.slice(1)} goal added! 🎯`, 'success');
-    }
-    
-    toggleTask(taskId, period, key) {
-        const goals = this.goals[period][key];
-        if (!goals) return;
-        
-        const task = goals.tasks.find(t => t.id === taskId);
-        if (task) {
-            task.completed = !task.completed;
-            this.saveData();
-            this.renderGoals();
-            
-            if (task.completed) {
-                this.showToast('🎉 Goal completed! Great job!', 'success');
-            }
-        }
-    }
-    
-    removeTask(taskId, period, key) {
-        const goals = this.goals[period][key];
-        if (!goals) return;
-        
-        goals.tasks = goals.tasks.filter(t => t.id !== taskId);
-        this.saveData();
-        this.renderGoals();
-        this.showToast('Goal removed', 'warning');
-    }
-    
-    // Entry Management - FIXED
+    // Entry Management
     goToToday() {
         this.currentDate = new Date();
         this.currentWeekStart = this.getWeekStart(this.currentDate);
         this.currentMonth = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), 1);
-        this.currentYear = this.currentDate.getFullYear();
         this.renderCurrentView();
-    }
-    
-    openTodayEntry() {
-        this.openDayEntry(new Date());
     }
     
     highlightToday() {
@@ -1417,60 +1060,22 @@ class UltimateDailyTracker {
         });
     }
     
-    // FIXED: Daily entry modal opening
     openDayEntry(date) {
-        console.log(`Opening day entry for: ${this.formatDate(date)}`);
-        
         this.selectedDate = date;
         const dateString = this.formatDate(date);
         
-        const modalDateEl = document.getElementById('modalDate');
-        if (modalDateEl) {
-            modalDateEl.textContent = this.formatDateDisplay(date);
-        }
+        // Set modal title
+        const modalDate = document.getElementById('modalDate');
+        if (modalDate) modalDate.textContent = this.formatDateDisplay(date);
         
+        // Load existing entry
         const entry = this.entries[dateString] || { text: '', habits: {} };
-        const dailyTextEl = document.getElementById('dailyText');
-        if (dailyTextEl) {
-            dailyTextEl.value = entry.text || '';
-        }
+        const dailyText = document.getElementById('dailyText');
+        if (dailyText) dailyText.value = entry.text || '';
         
-        this.updateWordCount();
-        this.updateEntryStreak();
         this.renderHabits(entry.habits || {});
-        
-        const modal = document.getElementById('dailyModal');
-        if (modal) {
-            modal.classList.remove('hidden');
-            console.log('Daily modal opened');
-            
-            // Focus on text area
-            setTimeout(() => {
-                const textArea = document.getElementById('dailyText');
-                if (textArea) textArea.focus();
-            }, 100);
-        } else {
-            console.error('Daily modal not found');
-        }
-    }
-    
-    updateWordCount() {
-        const textArea = document.getElementById('dailyText');
-        const wordCountEl = document.getElementById('wordCount');
-        
-        if (textArea && wordCountEl) {
-            const text = textArea.value || '';
-            const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
-            wordCountEl.textContent = `${wordCount} words`;
-        }
-    }
-    
-    updateEntryStreak() {
-        const streak = this.calculateCurrentStreak();
-        const entryStreakEl = document.getElementById('entryStreak');
-        if (entryStreakEl) {
-            entryStreakEl.textContent = `🔥 ${streak} day streak`;
-        }
+        const dailyModal = document.getElementById('dailyModal');
+        if (dailyModal) dailyModal.classList.remove('hidden');
     }
     
     openEntryView(date) {
@@ -1479,19 +1084,18 @@ class UltimateDailyTracker {
         
         if (!entry) return;
         
-        const entryViewDateEl = document.getElementById('entryViewDate');
-        if (entryViewDateEl) {
-            entryViewDateEl.textContent = `Entry for ${this.formatDateDisplay(date)}`;
-        }
+        const entryViewDate = document.getElementById('entryViewDate');
+        if (entryViewDate) entryViewDate.textContent = `Entry for ${this.formatDateDisplay(date)}`;
         
         const content = document.getElementById('entryViewContent');
         if (!content) return;
         
         content.innerHTML = '';
         
+        // Full text
         if (entry.text) {
             const textSection = document.createElement('div');
-            textSection.innerHTML = '<h4>📝 Daily Entry</h4>';
+            textSection.innerHTML = '<h4>Daily Entry</h4>';
             
             const textContent = document.createElement('div');
             textContent.className = 'entry-full-text';
@@ -1501,9 +1105,10 @@ class UltimateDailyTracker {
             content.appendChild(textSection);
         }
         
+        // Habits
         if (entry.habits) {
             const habitsSection = document.createElement('div');
-            habitsSection.innerHTML = '<h4>✅ Habits</h4>';
+            habitsSection.innerHTML = '<h4>Habits</h4>';
             
             const habitsList = document.createElement('div');
             habitsList.className = 'entry-habits-list';
@@ -1532,10 +1137,8 @@ class UltimateDailyTracker {
             content.appendChild(habitsSection);
         }
         
-        const modal = document.getElementById('entryViewModal');
-        if (modal) {
-            modal.classList.remove('hidden');
-        }
+        const entryViewModal = document.getElementById('entryViewModal');
+        if (entryViewModal) entryViewModal.classList.remove('hidden');
     }
     
     renderHabits(completedHabits = {}) {
@@ -1554,15 +1157,18 @@ class UltimateDailyTracker {
             checkbox.className = 'habit-checkbox';
             checkbox.id = `habit-${index}`;
             checkbox.checked = completedHabits[habit] || false;
-            checkbox.addEventListener('change', () => {
-                this.scheduleAutoSave();
-                this.updateWordCount();
+            checkbox.addEventListener('change', (e) => {
+                e.stopPropagation();
+                this.autoSave();
             });
             
             const label = document.createElement('label');
             label.className = 'habit-label';
             label.setAttribute('for', `habit-${index}`);
             label.textContent = habit;
+            label.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
             
             habitItem.appendChild(checkbox);
             habitItem.appendChild(label);
@@ -1601,7 +1207,6 @@ class UltimateDailyTracker {
             }
             
             this.renderHabitLegend();
-            this.showToast('Custom habit added! ✅', 'success');
         }
     }
     
@@ -1625,32 +1230,24 @@ class UltimateDailyTracker {
         
         this.renderHabitLegend();
         this.renderCurrentView();
-        this.showToast('Custom habit removed', 'warning');
     }
     
     getAllHabits() {
         return [...this.defaultHabits, ...this.customHabits];
     }
     
-    scheduleAutoSave() {
-        if (this.autoSaveTimer) {
-            clearTimeout(this.autoSaveTimer);
-        }
-        
-        this.autoSaveTimer = setTimeout(() => {
+    autoSave() {
+        if (this.selectedDate) {
             this.saveCurrentEntry();
-            this.updateAutoSaveStatus();
-        }, 2000);
-        
-        this.updateWordCount();
+        }
     }
     
     saveCurrentEntry() {
         if (!this.selectedDate) return;
         
         const dateString = this.formatDate(this.selectedDate);
-        const dailyTextEl = document.getElementById('dailyText');
-        const text = dailyTextEl ? dailyTextEl.value || '' : '';
+        const dailyText = document.getElementById('dailyText');
+        const text = dailyText ? dailyText.value || '' : '';
         
         const habits = {};
         const allHabits = this.getAllHabits();
@@ -1670,353 +1267,66 @@ class UltimateDailyTracker {
         this.saveData();
     }
     
-    quickSave() {
-        this.saveCurrentEntry();
-        this.showToast('Entry saved! 💾', 'success');
-    }
-    
     saveEntry() {
         this.saveCurrentEntry();
         this.closeModal();
         this.renderCurrentView();
-        this.showToast('Entry saved successfully! 🎉', 'success');
+        this.showToast('Entry saved successfully!', 'success');
     }
     
-    updateAutoSaveStatus() {
-        const statusElement = document.querySelector('.auto-save-status');
-        if (statusElement) {
-            statusElement.textContent = '✓ Auto-saved';
-            statusElement.style.opacity = '1';
-            
-            setTimeout(() => {
-                statusElement.style.opacity = '0.7';
-            }, 2000);
-        }
-    }
-    
-    // Habit Legend
-    renderHabitLegend() {
-        const habitColors = document.getElementById('habitColors');
-        if (!habitColors) return;
-        
-        habitColors.innerHTML = '';
-        const allHabits = [...this.defaultHabits, ...this.customHabits];
-        
-        allHabits.forEach(habit => {
-            const colorItem = document.createElement('div');
-            colorItem.className = 'habit-color-item';
-            
-            const dot = document.createElement('div');
-            dot.className = 'habit-color-dot';
-            dot.style.backgroundColor = this.habitColors[habit] || this.getRandomColor();
-            
-            const name = document.createElement('div');
-            name.className = 'habit-color-name';
-            name.textContent = habit;
-            
-            colorItem.appendChild(dot);
-            colorItem.appendChild(name);
-            habitColors.appendChild(colorItem);
-        });
-    }
-    
-    getRandomColor() {
-        return this.availableColors[Math.floor(Math.random() * this.availableColors.length)];
-    }
-    
-    // Modal Management - FIXED
-    closeModal(modalId = null) {
-        if (modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) modal.classList.add('hidden');
-        } else {
-            const dailyModal = document.getElementById('dailyModal');
-            if (dailyModal) dailyModal.classList.add('hidden');
-        }
-        this.selectedDate = null;
-    }
-    
-    closeAllModals() {
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.classList.add('hidden');
-        });
+    // Modal Management
+    closeModal() {
+        const dailyModal = document.getElementById('dailyModal');
+        if (dailyModal) dailyModal.classList.add('hidden');
         this.selectedDate = null;
     }
     
     closeEntryViewModal() {
-        const modal = document.getElementById('entryViewModal');
-        if (modal) modal.classList.add('hidden');
+        const entryViewModal = document.getElementById('entryViewModal');
+        if (entryViewModal) entryViewModal.classList.add('hidden');
+    }
+    
+    openSettings() {
+        console.log('Opening settings modal');
+        // Populate settings form
+        const githubToken = document.getElementById('githubToken');
+        const gistId = document.getElementById('gistId');
+        
+        if (githubToken) githubToken.value = this.githubSettings.token || '';
+        if (gistId) gistId.value = this.githubSettings.gistId || '';
+        
+        const settingsModal = document.getElementById('settingsModal');
+        if (settingsModal) {
+            settingsModal.classList.remove('hidden');
+            console.log('Settings modal opened');
+        } else {
+            console.error('Settings modal not found');
+        }
+    }
+
+    closeSettings() {
+        const settingsModal = document.getElementById('settingsModal');
+        if (settingsModal) settingsModal.classList.add('hidden');
     }
     
     openExportModal() {
-        const modal = document.getElementById('exportModal');
-        if (modal) modal.classList.remove('hidden');
+        const exportModal = document.getElementById('exportModal');
+        if (exportModal) exportModal.classList.remove('hidden');
     }
     
     closeExportModal() {
-        const modal = document.getElementById('exportModal');
-        if (modal) modal.classList.add('hidden');
+        const exportModal = document.getElementById('exportModal');
+        if (exportModal) exportModal.classList.add('hidden');
     }
     
-    openHelpModal() {
-        const modal = document.getElementById('helpModal');
-        if (modal) modal.classList.remove('hidden');
+    openImportModal() {
+        const importModal = document.getElementById('importModal');
+        if (importModal) importModal.classList.remove('hidden');
     }
     
-    closeHelpModal() {
-        const modal = document.getElementById('helpModal');
-        if (modal) modal.classList.add('hidden');
-    }
-    
-    // Jump To Functionality
-    openJumpToModal() {
-        const jumpDate = document.getElementById('jumpDate');
-        if (jumpDate) {
-            jumpDate.value = this.formatDate(new Date());
-        }
-        const modal = document.getElementById('jumpToModal');
-        if (modal) modal.classList.remove('hidden');
-    }
-    
-    closeJumpToModal() {
-        const modal = document.getElementById('jumpToModal');
-        if (modal) modal.classList.add('hidden');
-    }
-    
-    executeJump() {
-        const jumpDate = document.getElementById('jumpDate');
-        if (jumpDate && jumpDate.value) {
-            const targetDate = new Date(jumpDate.value);
-            this.jumpToDate(targetDate);
-        }
-        this.closeJumpToModal();
-    }
-    
-    jumpToToday() {
-        this.jumpToDate(new Date());
-        this.closeJumpToModal();
-    }
-    
-    jumpToYesterday() {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        this.jumpToDate(yesterday);
-        this.closeJumpToModal();
-    }
-    
-    jumpToWeekStart() {
-        this.jumpToDate(this.getWeekStart(new Date()));
-        this.closeJumpToModal();
-    }
-    
-    jumpToMonthStart() {
-        const monthStart = new Date();
-        monthStart.setDate(1);
-        this.jumpToDate(monthStart);
-        this.closeJumpToModal();
-    }
-    
-    jumpToDate(targetDate) {
-        this.currentDate = targetDate;
-        this.currentWeekStart = this.getWeekStart(targetDate);
-        this.currentMonth = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
-        this.currentYear = targetDate.getFullYear();
-        
-        // Switch to appropriate view and render
-        if (this.currentView === 'yearly') {
-            this.renderYearlyCalendar();
-        } else if (this.currentView === 'monthly') {
-            this.renderMonthlyCalendar();
-            this.renderMonthlySummary();
-        } else {
-            this.switchView('weekly');
-        }
-        
-        this.showToast(`Jumped to ${this.formatDateDisplay(targetDate)} 🚀`, 'success');
-    }
-    
-    // GitHub Sync Functionality
-    initializeSync() {
-        if (!this.syncConfig.enabled) {
-            this.openSyncSetupModal();
-        } else {
-            this.syncNow();
-        }
-    }
-    
-    openSyncSetupModal() {
-        const modal = document.getElementById('syncSetupModal');
-        if (modal) modal.classList.remove('hidden');
-    }
-    
-    closeSyncSetupModal() {
-        const modal = document.getElementById('syncSetupModal');
-        if (modal) modal.classList.add('hidden');
-    }
-    
-    async testGitHubConnection() {
-        const tokenInput = document.getElementById('githubToken');
-        const statusDiv = document.getElementById('tokenStatus');
-        const testBtn = document.getElementById('testConnection');
-        const enableBtn = document.getElementById('enableSync');
-        
-        if (!tokenInput || !statusDiv) return;
-        
-        const token = tokenInput.value.trim();
-        if (!token) {
-            statusDiv.textContent = 'Please enter a token';
-            statusDiv.className = 'token-status error';
-            return;
-        }
-        
-        if (testBtn) {
-            testBtn.textContent = 'Testing...';
-            testBtn.disabled = true;
-        }
-        
-        try {
-            const response = await fetch('https://api.github.com/user', {
-                headers: {
-                    'Authorization': `token ${token}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            });
-            
-            if (response.ok) {
-                const user = await response.json();
-                statusDiv.textContent = `✅ Connected as ${user.login}`;
-                statusDiv.className = 'token-status success';
-                if (enableBtn) enableBtn.classList.remove('hidden');
-                this.syncConfig.githubToken = token;
-            } else {
-                statusDiv.textContent = '❌ Invalid token or insufficient permissions';
-                statusDiv.className = 'token-status error';
-            }
-        } catch (error) {
-            statusDiv.textContent = '❌ Connection failed. Check your internet connection.';
-            statusDiv.className = 'token-status error';
-        }
-        
-        if (testBtn) {
-            testBtn.textContent = '🔗 Test Connection';
-            testBtn.disabled = false;
-        }
-    }
-    
-    async enableSync() {
-        if (!this.syncConfig.githubToken) return;
-        
-        try {
-            await this.createOrUpdateGist();
-            
-            this.syncConfig.enabled = true;
-            this.syncConfig.lastSync = new Date().toISOString();
-            this.saveData();
-            
-            this.closeSyncSetupModal();
-            this.updateSyncStatus();
-            this.showToast('✅ GitHub sync enabled!', 'success');
-            
-            this.startAutoSync();
-        } catch (error) {
-            this.showToast('❌ Failed to enable sync', 'error');
-            console.error('Sync enable error:', error);
-        }
-    }
-    
-    async createOrUpdateGist() {
-        if (!this.syncConfig.githubToken) throw new Error('No GitHub token');
-        
-        const gistData = {
-            description: `Daily Activity Tracker Data for ${this.userName}`,
-            files: {
-                'daily-tracker-data.json': {
-                    content: JSON.stringify({
-                        entries: this.entries,
-                        customHabits: this.customHabits,
-                        habitColors: this.habitColors,
-                        goals: this.goals,
-                        lastSync: new Date().toISOString(),
-                        version: '3.1.0'
-                    }, null, 2)
-                }
-            }
-        };
-        
-        const url = this.syncConfig.gistId 
-            ? `https://api.github.com/gists/${this.syncConfig.gistId}`
-            : 'https://api.github.com/gists';
-        
-        const method = this.syncConfig.gistId ? 'PATCH' : 'POST';
-        
-        const response = await fetch(url, {
-            method,
-            headers: {
-                'Authorization': `token ${this.syncConfig.githubToken}`,
-                'Accept': 'application/vnd.github.v3+json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(gistData)
-        });
-        
-        if (!response.ok) {
-            throw new Error(`GitHub API error: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        this.syncConfig.gistId = result.id;
-        this.syncConfig.lastSync = new Date().toISOString();
-    }
-    
-    async syncNow() {
-        if (!this.syncConfig.enabled || !this.syncConfig.githubToken) {
-            this.showToast('Sync not configured', 'warning');
-            return;
-        }
-        
-        this.updateSyncStatus('syncing');
-        
-        try {
-            await this.createOrUpdateGist();
-            this.updateSyncStatus('synced');
-            this.showToast('✅ Data synced to GitHub!', 'success');
-        } catch (error) {
-            this.updateSyncStatus('error');
-            this.showToast('❌ Sync failed', 'error');
-            console.error('Sync error:', error);
-        }
-    }
-    
-    startAutoSync() {
-        if (!this.syncConfig.enabled) return;
-        
-        setInterval(() => {
-            if (this.syncConfig.enabled && this.syncConfig.githubToken) {
-                this.syncNow();
-            }
-        }, this.syncConfig.autoSyncInterval);
-    }
-    
-    updateSyncStatus(status = null) {
-        const syncStatus = document.getElementById('syncStatus');
-        if (!syncStatus) return;
-        
-        if (status === 'syncing') {
-            syncStatus.textContent = '⚡ Syncing...';
-            syncStatus.className = 'sync-indicator syncing';
-        } else if (status === 'synced') {
-            syncStatus.textContent = '✅ Synced';
-            syncStatus.className = 'sync-indicator online';
-        } else if (status === 'error') {
-            syncStatus.textContent = '❌ Sync Error';
-            syncStatus.className = 'sync-indicator';
-        } else if (this.syncConfig.enabled) {
-            syncStatus.textContent = '🌐 Online';
-            syncStatus.className = 'sync-indicator online';
-        } else {
-            syncStatus.textContent = '⚡ Offline';
-            syncStatus.className = 'sync-indicator';
-        }
+    closeImportModal() {
+        const importModal = document.getElementById('importModal');
+        if (importModal) importModal.classList.add('hidden');
     }
     
     // Export/Import Methods
@@ -2027,8 +1337,7 @@ class UltimateDailyTracker {
             habitColors: this.habitColors,
             goals: this.goals,
             exportDate: new Date().toISOString(),
-            version: "3.1.0",
-            userName: this.userName
+            version: "3.0.0"
         };
         
         const timestamp = new Date().toISOString().split('T')[0];
@@ -2036,20 +1345,20 @@ class UltimateDailyTracker {
         if (format === 'json') {
             this.downloadFile(
                 JSON.stringify(data, null, 2),
-                `${this.userName.toLowerCase()}-daily-tracker-${timestamp}.json`,
+                `daily-tracker-export-${timestamp}.json`,
                 'application/json'
             );
         } else if (format === 'csv') {
             const csv = this.convertToCSV(data);
             this.downloadFile(
                 csv,
-                `${this.userName.toLowerCase()}-daily-tracker-${timestamp}.csv`,
+                `daily-tracker-export-${timestamp}.csv`,
                 'text/csv'
             );
         }
         
         this.closeExportModal();
-        this.showToast(`📤 Data exported as ${format.toUpperCase()}!`, 'success');
+        this.showToast(`Data exported as ${format.toUpperCase()}!`, 'success');
     }
     
     convertToCSV(data) {
@@ -2086,6 +1395,60 @@ class UltimateDailyTracker {
         URL.revokeObjectURL(url);
     }
     
+    executeImport() {
+        const fileInput = document.getElementById('importFile');
+        const mode = document.querySelector('input[name="importMode"]:checked')?.value || 'merge';
+        
+        if (!fileInput || !fileInput.files.length) {
+            this.showToast('Please select a file to import.', 'error');
+            return;
+        }
+        
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+            try {
+                const content = e.target.result;
+                let importedData;
+                
+                if (file.name.endsWith('.json')) {
+                    importedData = JSON.parse(content);
+                } else {
+                    this.showToast('Only JSON files are supported for import.', 'error');
+                    return;
+                }
+                
+                if (mode === 'overwrite') {
+                    this.entries = importedData.entries || {};
+                    this.customHabits = importedData.customHabits || [];
+                    this.habitColors = { ...this.habitColors, ...(importedData.habitColors || {}) };
+                    this.goals = importedData.goals || this.getDefaultGoals();
+                } else {
+                    // Merge mode
+                    Object.assign(this.entries, importedData.entries || {});
+                    this.customHabits = [...new Set([...this.customHabits, ...(importedData.customHabits || [])])];
+                    Object.assign(this.habitColors, importedData.habitColors || {});
+                    if (importedData.goals) {
+                        Object.assign(this.goals, importedData.goals);
+                    }
+                }
+                
+                this.saveData();
+                this.renderCurrentView();
+                this.renderHabitLegend();
+                this.closeImportModal();
+                this.showToast('Data imported successfully!', 'success');
+                
+            } catch (error) {
+                this.showToast('Error importing data. Please check the file format.', 'error');
+                console.error('Import error:', error);
+            }
+        };
+        
+        reader.readAsText(file);
+    }
+    
     // Utility Methods
     formatDate(date) {
         return date.toISOString().split('T')[0];
@@ -2109,13 +1472,13 @@ class UltimateDailyTracker {
             
             setTimeout(() => {
                 toast.classList.add('hidden');
-            }, 4000);
+            }, 3000);
         }
     }
 }
 
-// Initialize the Ultimate Daily Tracker
+// Initialize the app
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 Loading ULTIMATE Daily Tracker for Amit...');
-    new UltimateDailyTracker();
+    console.log('DOM loaded, initializing Enhanced Daily Tracker with Goals and Sync...');
+    new DailyTracker();
 });
