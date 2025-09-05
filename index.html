@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amit's NEET-PG Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="app-header">
+            <div class="header-main">
+                <h1>Hi Amit! 💪</h1>
+                <div class="motivational-quote">
+                    <p id="motivationalQuote">"Success is not final, failure is not fatal: it is the courage to continue that counts." - NEET-PG Journey</p>
+                </div>
+            </div>
+            <div class="header-controls">
+                <div class="sync-status" id="syncStatus">
+                    <span class="sync-indicator" id="syncIndicator"></span>
+                    <span class="sync-text" id="syncText">Offline</span>
+                    <button id="manualSync" class="btn btn--outline btn--sm">Sync</button>
+                </div>
+                <button id="todayBtn" class="btn btn--secondary btn--sm">Today</button>
+                <button id="exportBtn" class="btn btn--outline btn--sm">Export</button>
+                <button id="importBtn" class="btn btn--outline btn--sm">Import</button>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="view-tabs">
+            <button id="weeklyTab" class="tab-btn tab-btn--active">Weekly</button>
+            <button id="monthlyTab" class="tab-btn">Monthly</button>
+            <button id="goalsTab" class="tab-btn">Goals</button>
+        </nav>
+
+        <!-- Weekly Calendar View -->
+        <main id="weeklyView" class="main-view">
+            <div class="calendar-header">
+                <button id="prevWeek" class="btn btn--outline btn--sm">&larr; Prev</button>
+                <h2 id="weekRange">September 1-7, 2025</h2>
+                <button id="nextWeek" class="btn btn--outline btn--sm">Next &rarr;</button>
+            </div>
+
+            <div class="calendar-grid">
+                <div class="day-header">Sun</div>
+                <div class="day-header">Mon</div>
+                <div class="day-header">Tue</div>
+                <div class="day-header">Wed</div>
+                <div class="day-header">Thu</div>
+                <div class="day-header">Fri</div>
+                <div class="day-header">Sat</div>
+                
+                <div id="calendarDays" class="calendar-days">
+                    <!-- Calendar days will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Habit Legend -->
+            <div class="habit-legend">
+                <h3>NEET-PG Habit Colors</h3>
+                <div id="habitColors" class="habit-colors-list">
+                    <!-- Habit colors will be populated by JavaScript -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Monthly Calendar View -->
+        <main id="monthlyView" class="main-view hidden">
+            <div class="calendar-header">
+                <button id="prevMonth" class="btn btn--outline btn--sm">&larr; Prev</button>
+                <h2 id="monthYear">September 2025</h2>
+                <button id="nextMonth" class="btn btn--outline btn--sm">Next &rarr;</button>
+            </div>
+
+            <div class="monthly-calendar">
+                <div class="month-day-header">Sun</div>
+                <div class="month-day-header">Mon</div>
+                <div class="month-day-header">Tue</div>
+                <div class="month-day-header">Wed</div>
+                <div class="month-day-header">Thu</div>
+                <div class="month-day-header">Fri</div>
+                <div class="month-day-header">Sat</div>
+                
+                <div id="monthlyCalendarDays" class="monthly-calendar-days">
+                    <!-- Monthly calendar days will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Monthly Summary -->
+            <div class="monthly-summary">
+                <h3>Month Summary</h3>
+                <div id="monthlySummaryContent" class="summary-content">
+                    <!-- Monthly summary will be populated by JavaScript -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Enhanced Goals View -->
+        <main id="goalsView" class="main-view hidden">
+            <!-- Sync Setup Card -->
+            <div class="sync-setup-card" id="syncSetupCard">
+                <h3>🔄 GitHub Gist Sync Setup</h3>
+                <p>Enable cloud sync to access your data across devices. Your data will be stored in a private GitHub Gist.</p>
+                <button id="setupSync" class="btn btn--primary">Setup Cloud Sync</button>
+            </div>
+
+            <!-- Goals Navigation -->
+            <div class="goals-nav">
+                <button id="weeklyGoalsTab" class="goals-tab-btn goals-tab-btn--active">Weekly Goals</button>
+                <button id="monthlyGoalsTab" class="goals-tab-btn">Monthly Goals</button>
+                <button id="yearlyGoalsTab" class="goals-tab-btn">Yearly Goals</button>
+            </div>
+
+            <!-- Weekly Goals -->
+            <div id="weeklyGoalsSection" class="goals-section">
+                <div class="goals-card">
+                    <div class="goals-header">
+                        <h3>Weekly Goals (Week 36, 2025)</h3>
+                        <div class="progress-indicator">
+                            <div class="progress-bar">
+                                <div id="weeklyProgress" class="progress-fill" style="width: 20%"></div>
+                            </div>
+                            <span id="weeklyProgressText">1/5 completed (20%)</span>
+                        </div>
+                    </div>
+                    <div class="goals-list" id="weeklyGoalsList">
+                        <!-- Goals will be populated by JavaScript -->
+                    </div>
+                    <div class="add-goal-section">
+                        <input type="text" id="newWeeklyGoal" class="form-control" placeholder="Add a new weekly goal...">
+                        <button id="addWeeklyGoal" class="btn btn--primary btn--sm">Add Goal</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Goals -->
+            <div id="monthlyGoalsSection" class="goals-section hidden">
+                <div class="goals-card">
+                    <div class="goals-header">
+                        <h3>Monthly Goals (September 2025)</h3>
+                        <div class="progress-indicator">
+                            <div class="progress-bar">
+                                <div id="monthlyProgress" class="progress-fill" style="width: 0%"></div>
+                            </div>
+                            <span id="monthlyProgressText">0/5 completed (0%)</span>
+                        </div>
+                    </div>
+                    <div class="goals-list" id="monthlyGoalsList">
+                        <!-- Goals will be populated by JavaScript -->
+                    </div>
+                    <div class="add-goal-section">
+                        <input type="text" id="newMonthlyGoal" class="form-control" placeholder="Add a new monthly goal...">
+                        <button id="addMonthlyGoal" class="btn btn--primary btn--sm">Add Goal</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Yearly Goals -->
+            <div id="yearlyGoalsSection" class="goals-section hidden">
+                <div class="goals-card">
+                    <div class="goals-header">
+                        <h3>Yearly Goals (2025)</h3>
+                        <div class="progress-indicator">
+                            <div class="progress-bar">
+                                <div id="yearlyProgress" class="progress-fill" style="width: 0%"></div>
+                            </div>
+                            <span id="yearlyProgressText">0/6 completed (0%)</span>
+                        </div>
+                    </div>
+                    <div class="goals-list" id="yearlyGoalsList">
+                        <!-- Goals will be populated by JavaScript -->
+                    </div>
+                    <div class="add-goal-section">
+                        <input type="text" id="newYearlyGoal" class="form-control" placeholder="Add a new yearly goal...">
+                        <button id="addYearlyGoal" class="btn btn--primary btn--sm">Add Goal</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Daily Entry Modal -->
+    <div id="dailyModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalDate">Today</h3>
+                <button id="closeModal" class="btn btn--outline btn--sm">Close</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">What did you do today?</label>
+                    <textarea id="dailyText" class="form-control daily-textarea" 
+                              rows="8" 
+                              placeholder="Write about your NEET-PG preparation today..."></textarea>
+                </div>
+
+                <div class="habits-section">
+                    <h4>Daily NEET-PG Habits</h4>
+                    <div id="habitsList" class="habits-list">
+                        <!-- Habits will be populated by JavaScript -->
+                    </div>
+                    
+                    <div class="custom-habit-section">
+                        <div class="flex gap-8">
+                            <input type="text" id="newHabit" class="form-control" 
+                                   placeholder="Add custom habit..." maxlength="30">
+                            <button id="addHabit" class="btn btn--secondary btn--sm">Add</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button id="saveEntry" class="btn btn--primary">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full Entry View Modal -->
+    <div id="entryViewModal" class="modal hidden">
+        <div class="modal-content modal-content--large">
+            <div class="modal-header">
+                <h3 id="entryViewDate">Entry Details</h3>
+                <button id="closeEntryView" class="btn btn--outline btn--sm">Close</button>
+            </div>
+            
+            <div class="modal-body">
+                <div id="entryViewContent" class="entry-view-content">
+                    <!-- Full entry content will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GitHub Sync Setup Modal -->
+    <div id="syncSetupModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔄 Setup GitHub Gist Sync</h3>
+                <button id="closeSyncSetup" class="btn btn--outline btn--sm">Close</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="sync-setup-content">
+                    <div class="setup-step">
+                        <h4>Step 1: Create GitHub Personal Access Token</h4>
+                        <ol class="setup-instructions">
+                            <li>Go to <a href="https://github.com/settings/tokens" target="_blank">GitHub Settings → Personal Access Tokens</a></li>
+                            <li>Click "Generate new token (classic)"</li>
+                            <li>Give it a name like "NEET-PG Tracker"</li>
+                            <li>Select scopes: <strong>gist</strong> (for creating private gists)</li>
+                            <li>Set expiration to "No expiration" (or your preference)</li>
+                            <li>Click "Generate token" and copy the token</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="setup-step">
+                        <h4>Step 2: Enter Your Token</h4>
+                        <div class="form-group">
+                            <label class="form-label">GitHub Personal Access Token</label>
+                            <input type="password" id="githubToken" class="form-control" 
+                                   placeholder="ghp_xxxxxxxxxxxx...">
+                            <small class="form-text">Your token is stored locally and never shared</small>
+                        </div>
+                        
+                        <div class="sync-actions">
+                            <button id="testConnection" class="btn btn--secondary">Test Connection</button>
+                            <button id="enableSync" class="btn btn--primary">Enable Sync</button>
+                        </div>
+                    </div>
+
+                    <div id="syncTestResult" class="sync-test-result hidden">
+                        <!-- Test results will be shown here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Options Modal -->
+    <div id="exportModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Export Data</h3>
+                <button id="closeExportModal" class="btn btn--outline btn--sm">Close</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="export-options">
+                    <button id="exportJSON" class="btn btn--primary btn--full-width">Export as JSON</button>
+                    <button id="exportCSV" class="btn btn--secondary btn--full-width">Export as CSV</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Data Modal -->
+    <div id="importModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Import Data</h3>
+                <button id="closeImportModal" class="btn btn--outline btn--sm">Close</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="import-section">
+                    <label class="form-label">Select File to Import</label>
+                    <input type="file" id="importFile" class="form-control" accept=".json,.csv">
+                    <div class="import-options">
+                        <label class="checkbox-label">
+                            <input type="radio" name="importMode" value="merge" checked>
+                            <span>Merge with existing data</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="radio" name="importMode" value="overwrite">
+                            <span>Overwrite existing data</span>
+                        </label>
+                    </div>
+                    <button id="executeImport" class="btn btn--primary btn--full-width">Import Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+        <span id="toastMessage"></span>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
