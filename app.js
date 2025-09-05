@@ -1,119 +1,241 @@
-// NEET-PG Daily Activity Tracker for Amit - Fixed Version
+// Enhanced NEET-PG Daily Activity Tracker with Goals and GitHub Sync
+
 class NEETPGTracker {
     constructor() {
-        console.log('Starting NEET-PG Tracker for Amit...');
-        
-        // Initialize dates
         this.currentDate = new Date();
         this.currentWeekStart = this.getWeekStart(this.currentDate);
         this.currentMonth = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), 1);
-        this.currentYear = this.currentDate.getFullYear();
         this.selectedDate = null;
         this.currentView = 'weekly';
-        this.quoteIndex = 0;
+        this.currentGoalsView = 'weekly';
         
-        // NEET-PG focused motivational quotes
+        // NEET-PG specific motivational quotes
         this.motivationalQuotes = [
-            "Every Anki card today brings you closer to NEET-PG success! 🩺",
-            "Consistency in study habits builds medical excellence. 📚",
-            "Your future patients depend on today's dedication. 💪",
-            "Strong body, sharp mind - gym time is study investment. 🏋️",
-            "Every chapter mastered is a step toward your dream residency. 🎯",
-            "Discipline today, NEET-PG success tomorrow. ⭐",
-            "Spaced repetition builds permanent medical knowledge. 🧠",
-            "Quality study beats quantity - focus is key. 🔍",
-            "Your NEET-PG rank reflects today's efforts. 📈",
-            "Preparation prevents poor performance. 🎓"
+            "Every MCQ you solve takes you one step closer to your dream specialty! 🎯",
+            "Your dedication today determines your rank tomorrow. Keep pushing! 💪",
+            "NEET-PG is not about luck, it's about consistent effort and smart study! 📚",
+            "Remember: Top rankers aren't born, they're made through daily discipline! ⭐",
+            "Each Anki review is an investment in your medical career! 🩺",
+            "Success in NEET-PG comes to those who never give up. You've got this! 🚀",
+            "Your future patients are counting on your preparation today! ❤️",
+            "Mock tests today, dream specialty tomorrow! 🎓",
+            "Consistency beats intensity. Show up every day! 🌟",
+            "The best doctors are those who never stopped learning. Keep studying! 📖"
         ];
         
-        // Default NEET-PG focused habits with medical theme colors
-        this.defaultHabits = [
-            "Anki Reviews",
-            "Exercise/Gym", 
-            "Medical Reading",
-            "Question Practice",
-            "Revision",
-            "Theory Study",
-            "Clinical Cases",
-            "Mock Tests"
-        ];
-        
-        // Medical-themed habit colors
+        // NEET-PG specific habit colors
         this.habitColors = {
-            "Anki Reviews": "#2563EB",
-            "Exercise/Gym": "#059669", 
-            "Medical Reading": "#DC2626",
-            "Question Practice": "#7C3AED",
-            "Revision": "#0891B2",
-            "Theory Study": "#EA580C",
-            "Clinical Cases": "#BE185D",
-            "Mock Tests": "#4338CA"
+            "Anki Reviews (500+ cards)": "#3B82F6",
+            "Pathology MCQs": "#10B981", 
+            "Anatomy Revision": "#EF4444",
+            "Pharmacology Study": "#8B5CF6",
+            "Mock Test": "#06B6D4",
+            "Physiology Notes": "#F59E0B",
+            "Clinical Subjects": "#EC4899",
+            "Gym/Exercise": "#14B8A6",
+            "Medical Videos": "#6366F1"
         };
         
         // Available colors for new habits
         this.availableColors = [
-            "#2563EB", "#059669", "#DC2626", "#7C3AED", "#0891B2", 
-            "#EA580C", "#BE185D", "#4338CA", "#10B981", "#F59E0B",
-            "#EF4444", "#8B5CF6", "#06B6D4", "#EC4899", "#6366F1"
+            "#3B82F6", "#10B981", "#EF4444", "#8B5CF6", "#06B6D4", 
+            "#F59E0B", "#EC4899", "#6366F1", "#14B8A6", "#F97316",
+            "#84CC16", "#A855F7", "#E11D48", "#0EA5E9", "#65A30D"
         ];
+        
+        // NEET-PG focused default habits
+        this.defaultHabits = [
+            "Anki Reviews (500+ cards)",
+            "Pathology MCQs",
+            "Anatomy Revision", 
+            "Pharmacology Study",
+            "Mock Test",
+            "Physiology Notes",
+            "Clinical Subjects",
+            "Gym/Exercise",
+            "Medical Videos"
+        ];
+
+        // Sync configuration
+        this.syncConfig = {
+            enabled: false,
+            gistId: null,
+            githubToken: null,
+            lastSync: null,
+            autoSyncInterval: 30000, // 30 seconds
+            syncInProgress: false
+        };
+
+        this.autoSyncTimer = null;
         
         this.init();
     }
     
     init() {
-        console.log('Initializing NEET-PG Tracker...');
+        console.log('Initializing Enhanced NEET-PG Tracker...');
         this.loadData();
         this.setupEventListeners();
-        this.startQuoteRotation();
+        this.showRandomQuote();
+        this.initializeSync();
+        // Important: render current view after all setup is complete
         this.renderCurrentView();
-        this.setupGoalsSelectors();
-        this.setupKeyboardShortcuts();
-        console.log('NEET-PG Tracker ready!');
+    }
+
+    showRandomQuote() {
+        const quoteElement = document.getElementById('motivationalQuote');
+        if (quoteElement) {
+            const randomQuote = this.motivationalQuotes[Math.floor(Math.random() * this.motivationalQuotes.length)];
+            quoteElement.textContent = randomQuote;
+        }
     }
     
     loadData() {
-        // Load from localStorage or use provided NEET-PG data
+        // Load from localStorage
         const storedData = localStorage.getItem('neetpgTrackerData');
         if (storedData) {
             const data = JSON.parse(storedData);
             this.entries = data.entries || {};
             this.customHabits = data.customHabits || [];
             this.habitColors = { ...this.habitColors, ...(data.habitColors || {}) };
-            this.goals = data.goals || { weekly: {}, monthly: {}, yearly: {} };
+            this.goals = data.goals || this.getInitialGoalsData();
+            this.syncConfig = { ...this.syncConfig, ...(data.syncConfig || {}) };
         } else {
-            // Use provided NEET-PG sample data
+            // Use provided application data as initial data
             this.entries = {
                 "2025-09-05": {
-                    "text": "Productive NEET-PG study day. Completed Cardiovascular Pathology - covered RHD, IE, and cardiomyopathies. Made 150 Anki cards with mnemonics. Solved 50 cardiology MCQs with 88% accuracy. Need to improve ECG interpretation. 2-hour gym session for study stamina. Evening pharmacology revision. Planning respiratory path tomorrow.",
+                    "text": "Had an incredibly productive NEET-PG study day! Completed 800 Anki cards focusing on Cardiovascular Pathology with 95% accuracy. Solved 150 MCQs on Pharmacology - scored 85% which is a significant improvement from last week. Spent 3 hours on Anatomy revision covering Upper Limb in detail, made comprehensive notes and diagrams. Watched 4 high-yield medical videos on Marrow covering recent exam patterns. Took a 2-hour mock test and analyzed all mistakes thoroughly. Feeling confident about the preparation strategy and motivated to continue this momentum. Tomorrow planning to focus on Respiratory system pathology and complete pending Physiology topics.",
                     "habits": {
-                        "Anki Reviews": true,
-                        "Exercise/Gym": true,
-                        "Medical Reading": true,
-                        "Question Practice": true,
-                        "Revision": true,
-                        "Theory Study": true,
-                        "Clinical Cases": false,
-                        "Mock Tests": false
+                        "Anki Reviews (500+ cards)": true,
+                        "Pathology MCQs": true,
+                        "Anatomy Revision": true,
+                        "Pharmacology Study": true,
+                        "Mock Test": true,
+                        "Physiology Notes": false,
+                        "Clinical Subjects": true,
+                        "Gym/Exercise": false,
+                        "Medical Videos": true
                     },
-                    "timestamp": new Date().toISOString()
+                    "timestamp": "2025-09-05T20:31:00.000Z"
                 }
             };
 
-            this.goals = {
-                weekly: {
-                    "2025-W36": "Complete 500 Anki reviews daily. Finish Pathology chapter on CVS. Solve 200 MCQs. Maintain gym routine. Review high-yield topics."
-                },
-                monthly: {
-                    "2025-09": "Master Cardiovascular and Respiratory Pathology. Complete 15,000 Anki reviews. Solve 2000+ practice questions. Score 85%+ in mock tests. Maintain physical fitness."
-                },
-                yearly: {
-                    "2025": "Crack NEET-PG with top rank. Complete entire syllabus twice. Master 50,000+ Anki cards. Score consistently 85%+ in mocks. Secure preferred residency seat."
-                }
-            };
-
+            this.goals = this.getInitialGoalsData();
             this.customHabits = [];
             this.saveData();
         }
+    }
+
+    getInitialGoalsData() {
+        return {
+            weekly: {
+                "2025-W36": [
+                    {
+                        id: "w1",
+                        text: "Complete Pathology: Cardiovascular System (500 Anki cards)",
+                        completed: false,
+                        dateAdded: "2025-09-05"
+                    },
+                    {
+                        id: "w2", 
+                        text: "Solve 200 MCQs on Pharmacology",
+                        completed: true,
+                        dateAdded: "2025-09-02"
+                    },
+                    {
+                        id: "w3",
+                        text: "Gym 5 days (strength + cardio for study stamina)",
+                        completed: false,
+                        dateAdded: "2025-09-02"
+                    },
+                    {
+                        id: "w4",
+                        text: "Complete Anatomy revision: Upper Limb",
+                        completed: false,
+                        dateAdded: "2025-09-03"
+                    },
+                    {
+                        id: "w5",
+                        text: "Take 2 mock tests and analyze mistakes",
+                        completed: false,
+                        dateAdded: "2025-09-04"
+                    }
+                ]
+            },
+            monthly: {
+                "2025-09": [
+                    {
+                        id: "m1",
+                        text: "Master Pathology: Complete CVS, Respiratory, GIT systems",
+                        completed: false,
+                        dateAdded: "2025-09-01"
+                    },
+                    {
+                        id: "m2",
+                        text: "Solve 2000+ MCQs across all subjects",
+                        completed: false,
+                        dateAdded: "2025-09-01"
+                    },
+                    {
+                        id: "m3",
+                        text: "Take 8 full-length mock tests",
+                        completed: false,
+                        dateAdded: "2025-09-01"
+                    },
+                    {
+                        id: "m4",
+                        text: "Maintain 95%+ Anki review accuracy",
+                        completed: false,
+                        dateAdded: "2025-09-01"
+                    },
+                    {
+                        id: "m5",
+                        text: "Gym 25 days for study stamina and stress relief",
+                        completed: false,
+                        dateAdded: "2025-09-01"
+                    }
+                ]
+            },
+            yearly: {
+                "2025": [
+                    {
+                        id: "y1",
+                        text: "Score 700+ in NEET-PG 2025 (target: top 1000 rank)",
+                        completed: false,
+                        dateAdded: "2025-01-01"
+                    },
+                    {
+                        id: "y2",
+                        text: "Master all high-yield topics with 95%+ accuracy",
+                        completed: false,
+                        dateAdded: "2025-01-01"
+                    },
+                    {
+                        id: "y3",
+                        text: "Complete 50,000+ Anki reviews with retention >90%",
+                        completed: false,
+                        dateAdded: "2025-01-01"
+                    },
+                    {
+                        id: "y4",
+                        text: "Take 100+ mock tests and analyze all mistakes",
+                        completed: false,
+                        dateAdded: "2025-01-01"
+                    },
+                    {
+                        id: "y5",
+                        text: "Maintain fitness: 300+ gym sessions for study stamina",
+                        completed: false,
+                        dateAdded: "2025-01-01"
+                    },
+                    {
+                        id: "y6",
+                        text: "Secure admission in dream specialty/college",
+                        completed: false,
+                        dateAdded: "2025-01-01"
+                    }
+                ]
+            }
+        };
     }
     
     saveData() {
@@ -122,179 +244,395 @@ class NEETPGTracker {
             customHabits: this.customHabits,
             habitColors: this.habitColors,
             goals: this.goals,
+            syncConfig: this.syncConfig,
             version: "3.0.0",
             lastUpdated: new Date().toISOString()
         };
         localStorage.setItem('neetpgTrackerData', JSON.stringify(data));
+        
+        // Trigger sync if enabled
+        if (this.syncConfig.enabled && !this.syncConfig.syncInProgress) {
+            this.syncToGist();
+        }
     }
-    
-    startQuoteRotation() {
-        // Rotate motivational quotes every 10 seconds
-        setInterval(() => {
-            this.quoteIndex = (this.quoteIndex + 1) % this.motivationalQuotes.length;
-            const quoteElement = document.getElementById('motivationalQuote');
-            if (quoteElement) {
-                quoteElement.textContent = this.motivationalQuotes[this.quoteIndex];
+
+    // GitHub Gist Sync Methods
+    initializeSync() {
+        this.updateSyncStatus();
+        
+        // Show or hide sync setup card based on sync status
+        this.updateSyncSetupVisibility();
+
+        // Start auto-sync if enabled
+        if (this.syncConfig.enabled) {
+            this.startAutoSync();
+        }
+    }
+
+    updateSyncSetupVisibility() {
+        const syncSetupCard = document.getElementById('syncSetupCard');
+        if (syncSetupCard) {
+            if (this.syncConfig.enabled) {
+                syncSetupCard.classList.add('hidden');
+            } else {
+                syncSetupCard.classList.remove('hidden');
             }
-        }, 10000);
+        }
+    }
+
+    startAutoSync() {
+        if (this.autoSyncTimer) {
+            clearInterval(this.autoSyncTimer);
+        }
+        
+        this.autoSyncTimer = setInterval(() => {
+            if (this.syncConfig.enabled && !this.syncConfig.syncInProgress) {
+                this.syncToGist();
+            }
+        }, this.syncConfig.autoSyncInterval);
+    }
+
+    stopAutoSync() {
+        if (this.autoSyncTimer) {
+            clearInterval(this.autoSyncTimer);
+            this.autoSyncTimer = null;
+        }
+    }
+
+    updateSyncStatus(status = 'offline', message = 'Offline') {
+        const indicator = document.getElementById('syncIndicator');
+        const text = document.getElementById('syncText');
+        
+        if (indicator && text) {
+            // Remove all status classes
+            indicator.className = 'sync-indicator';
+            // Add the specific status class
+            indicator.classList.add(status);
+            text.textContent = message;
+        }
+    }
+
+    async testGitHubConnection(token) {
+        try {
+            const response = await fetch('https://api.github.com/user', {
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+
+            if (response.ok) {
+                const user = await response.json();
+                return { success: true, user };
+            } else {
+                return { success: false, error: 'Invalid token or insufficient permissions' };
+            }
+        } catch (error) {
+            return { success: false, error: 'Network error: ' + error.message };
+        }
+    }
+
+    async createGist(data) {
+        const gistData = {
+            description: "NEET-PG Tracker Data - Private Backup",
+            public: false,
+            files: {
+                "neetpg-tracker-data.json": {
+                    content: JSON.stringify(data, null, 2)
+                }
+            }
+        };
+
+        try {
+            const response = await fetch('https://api.github.com/gists', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `token ${this.syncConfig.githubToken}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(gistData)
+            });
+
+            if (response.ok) {
+                const gist = await response.json();
+                return { success: true, gist };
+            } else {
+                const error = await response.json();
+                return { success: false, error: error.message };
+            }
+        } catch (error) {
+            return { success: false, error: 'Network error: ' + error.message };
+        }
+    }
+
+    async updateGist(gistId, data) {
+        const gistData = {
+            files: {
+                "neetpg-tracker-data.json": {
+                    content: JSON.stringify(data, null, 2)
+                }
+            }
+        };
+
+        try {
+            const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `token ${this.syncConfig.githubToken}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(gistData)
+            });
+
+            if (response.ok) {
+                return { success: true };
+            } else {
+                const error = await response.json();
+                return { success: false, error: error.message };
+            }
+        } catch (error) {
+            return { success: false, error: 'Network error: ' + error.message };
+        }
+    }
+
+    async syncToGist() {
+        if (this.syncConfig.syncInProgress) return;
+        
+        this.syncConfig.syncInProgress = true;
+        this.updateSyncStatus('syncing', 'Syncing...');
+
+        try {
+            const dataToSync = {
+                entries: this.entries,
+                customHabits: this.customHabits,
+                habitColors: this.habitColors,
+                goals: this.goals,
+                version: "3.0.0",
+                lastUpdated: new Date().toISOString()
+            };
+
+            let result;
+            if (this.syncConfig.gistId) {
+                // Update existing gist
+                result = await this.updateGist(this.syncConfig.gistId, dataToSync);
+            } else {
+                // Create new gist
+                result = await this.createGist(dataToSync);
+                if (result.success) {
+                    this.syncConfig.gistId = result.gist.id;
+                }
+            }
+
+            if (result.success) {
+                this.syncConfig.lastSync = new Date().toISOString();
+                this.updateSyncStatus('synced', `Synced ${this.formatSyncTime(this.syncConfig.lastSync)}`);
+                
+                // Update localStorage with sync config
+                const localData = JSON.parse(localStorage.getItem('neetpgTrackerData') || '{}');
+                localData.syncConfig = this.syncConfig;
+                localStorage.setItem('neetpgTrackerData', JSON.stringify(localData));
+            } else {
+                this.updateSyncStatus('error', 'Sync failed');
+                console.error('Sync failed:', result.error);
+            }
+        } catch (error) {
+            this.updateSyncStatus('error', 'Sync failed');
+            console.error('Sync error:', error);
+        } finally {
+            this.syncConfig.syncInProgress = false;
+        }
+    }
+
+    formatSyncTime(timestamp) {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        
+        if (diffMins < 1) return 'just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+        return date.toLocaleDateString();
+    }
+
+    // Goals Management Methods
+    getCurrentWeekKey() {
+        const year = this.currentDate.getFullYear();
+        const week = this.getWeekNumber(this.currentDate);
+        return `${year}-W${week.toString().padStart(2, '0')}`;
+    }
+
+    getCurrentMonthKey() {
+        const year = this.currentDate.getFullYear();
+        const month = this.currentDate.getMonth() + 1;
+        return `${year}-${month.toString().padStart(2, '0')}`;
+    }
+
+    getCurrentYearKey() {
+        return this.currentDate.getFullYear().toString();
+    }
+
+    getWeekNumber(date) {
+        const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+        const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
+        return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+    }
+
+    addGoal(period) {
+        const input = document.getElementById(`new${period.charAt(0).toUpperCase() + period.slice(1)}Goal`);
+        if (!input) return;
+
+        const goalText = input.value.trim();
+        if (!goalText) return;
+
+        let key;
+        switch(period) {
+            case 'weekly':
+                key = this.getCurrentWeekKey();
+                break;
+            case 'monthly':
+                key = this.getCurrentMonthKey();
+                break;
+            case 'yearly':
+                key = this.getCurrentYearKey();
+                break;
+        }
+
+        if (!this.goals[period][key]) {
+            this.goals[period][key] = [];
+        }
+
+        const newGoal = {
+            id: Date.now().toString(),
+            text: goalText,
+            completed: false,
+            dateAdded: new Date().toISOString().split('T')[0]
+        };
+
+        this.goals[period][key].push(newGoal);
+        input.value = '';
+        this.saveData();
+        this.renderGoals();
+        this.showToast(`${period.charAt(0).toUpperCase() + period.slice(1)} goal added!`, 'success');
+    }
+
+    toggleGoal(period, key, goalId) {
+        const goals = this.goals[period][key];
+        if (!goals) return;
+
+        const goal = goals.find(g => g.id === goalId);
+        if (goal) {
+            goal.completed = !goal.completed;
+            this.saveData();
+            this.renderGoals();
+        }
+    }
+
+    removeGoal(period, key, goalId) {
+        const goals = this.goals[period][key];
+        if (!goals) return;
+
+        this.goals[period][key] = goals.filter(g => g.id !== goalId);
+        this.saveData();
+        this.renderGoals();
+        this.showToast('Goal removed!', 'success');
+    }
+
+    calculateProgress(goals) {
+        if (!goals || goals.length === 0) return { completed: 0, total: 0, percentage: 0 };
+        
+        const completed = goals.filter(g => g.completed).length;
+        const total = goals.length;
+        const percentage = Math.round((completed / total) * 100);
+        
+        return { completed, total, percentage };
     }
     
     setupEventListeners() {
-        // Tab navigation - Fixed
-        const weeklyTab = document.getElementById('weeklyTab');
-        const monthlyTab = document.getElementById('monthlyTab');
-        const yearlyTab = document.getElementById('yearlyTab');
-        const goalsTab = document.getElementById('goalsTab');
+        // Tab navigation
+        document.getElementById('weeklyTab')?.addEventListener('click', () => this.switchView('weekly'));
+        document.getElementById('monthlyTab')?.addEventListener('click', () => this.switchView('monthly'));
+        document.getElementById('goalsTab')?.addEventListener('click', () => this.switchView('goals'));
         
-        if (weeklyTab) weeklyTab.addEventListener('click', () => this.switchView('weekly'));
-        if (monthlyTab) monthlyTab.addEventListener('click', () => this.switchView('monthly'));
-        if (yearlyTab) yearlyTab.addEventListener('click', () => this.switchView('yearly'));
-        if (goalsTab) goalsTab.addEventListener('click', () => this.switchView('goals'));
+        // Goals tab navigation
+        document.getElementById('weeklyGoalsTab')?.addEventListener('click', () => this.switchGoalsView('weekly'));
+        document.getElementById('monthlyGoalsTab')?.addEventListener('click', () => this.switchGoalsView('monthly'));
+        document.getElementById('yearlyGoalsTab')?.addEventListener('click', () => this.switchGoalsView('yearly'));
         
         // Navigation controls
-        const prevWeek = document.getElementById('prevWeek');
-        const nextWeek = document.getElementById('nextWeek');
-        const prevMonth = document.getElementById('prevMonth');
-        const nextMonth = document.getElementById('nextMonth');
-        const prevYear = document.getElementById('prevYear');
-        const nextYear = document.getElementById('nextYear');
-        const todayBtn = document.getElementById('todayBtn');
+        document.getElementById('prevWeek')?.addEventListener('click', () => this.navigateWeek(-1));
+        document.getElementById('nextWeek')?.addEventListener('click', () => this.navigateWeek(1));
+        document.getElementById('prevMonth')?.addEventListener('click', () => this.navigateMonth(-1));
+        document.getElementById('nextMonth')?.addEventListener('click', () => this.navigateMonth(1));
+        document.getElementById('todayBtn')?.addEventListener('click', () => this.goToToday());
         
-        if (prevWeek) prevWeek.addEventListener('click', () => this.navigateWeek(-1));
-        if (nextWeek) nextWeek.addEventListener('click', () => this.navigateWeek(1));
-        if (prevMonth) prevMonth.addEventListener('click', () => this.navigateMonth(-1));
-        if (nextMonth) nextMonth.addEventListener('click', () => this.navigateMonth(1));
-        if (prevYear) prevYear.addEventListener('click', () => this.navigateYear(-1));
-        if (nextYear) nextYear.addEventListener('click', () => this.navigateYear(1));
-        if (todayBtn) todayBtn.addEventListener('click', () => this.goToToday());
+        // Sync controls
+        document.getElementById('setupSync')?.addEventListener('click', () => this.openSyncSetupModal());
+        document.getElementById('manualSync')?.addEventListener('click', () => this.syncToGist());
+        document.getElementById('testConnection')?.addEventListener('click', () => this.testConnection());
+        document.getElementById('enableSync')?.addEventListener('click', () => this.enableSync());
+        document.getElementById('closeSyncSetup')?.addEventListener('click', () => this.closeSyncSetupModal());
         
-        // Export/Import - Fixed
-        const exportBtn = document.getElementById('exportBtn');
-        const importBtn = document.getElementById('importBtn');
+        // Goals
+        document.getElementById('addWeeklyGoal')?.addEventListener('click', () => this.addGoal('weekly'));
+        document.getElementById('addMonthlyGoal')?.addEventListener('click', () => this.addGoal('monthly'));
+        document.getElementById('addYearlyGoal')?.addEventListener('click', () => this.addGoal('yearly'));
         
-        if (exportBtn) exportBtn.addEventListener('click', () => this.openExportModal());
-        if (importBtn) importBtn.addEventListener('click', () => this.openImportModal());
+        // Goal input enter key
+        document.getElementById('newWeeklyGoal')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.addGoal('weekly');
+        });
+        document.getElementById('newMonthlyGoal')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.addGoal('monthly');
+        });
+        document.getElementById('newYearlyGoal')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.addGoal('yearly');
+        });
         
-        // Modal controls - Fixed
-        const closeModal = document.getElementById('closeModal');
-        const closeEntryView = document.getElementById('closeEntryView');
-        const closeExportModal = document.getElementById('closeExportModal');
-        const closeImportModal = document.getElementById('closeImportModal');
-        const saveEntry = document.getElementById('saveEntry');
+        // Export/Import
+        document.getElementById('exportBtn')?.addEventListener('click', () => this.openExportModal());
+        document.getElementById('importBtn')?.addEventListener('click', () => this.openImportModal());
         
-        if (closeModal) closeModal.addEventListener('click', () => this.closeModal());
-        if (closeEntryView) closeEntryView.addEventListener('click', () => this.closeEntryViewModal());
-        if (closeExportModal) closeExportModal.addEventListener('click', () => this.closeExportModal());
-        if (closeImportModal) closeImportModal.addEventListener('click', () => this.closeImportModal());
-        if (saveEntry) saveEntry.addEventListener('click', () => this.saveEntry());
+        // Modal controls
+        document.getElementById('closeModal')?.addEventListener('click', () => this.closeModal());
+        document.getElementById('closeEntryView')?.addEventListener('click', () => this.closeEntryViewModal());
+        document.getElementById('closeExportModal')?.addEventListener('click', () => this.closeExportModal());
+        document.getElementById('closeImportModal')?.addEventListener('click', () => this.closeImportModal());
+        document.getElementById('saveEntry')?.addEventListener('click', () => this.saveEntry());
         
-        // Export buttons - Fixed
-        const exportJSON = document.getElementById('exportJSON');
-        const exportCSV = document.getElementById('exportCSV');
+        // Export buttons
+        document.getElementById('exportJSON')?.addEventListener('click', () => this.exportData('json'));
+        document.getElementById('exportCSV')?.addEventListener('click', () => this.exportData('csv'));
         
-        if (exportJSON) exportJSON.addEventListener('click', () => this.exportData('json'));
-        if (exportCSV) exportCSV.addEventListener('click', () => this.exportData('csv'));
+        // Import
+        document.getElementById('executeImport')?.addEventListener('click', () => this.executeImport());
         
-        // Import - Fixed
-        const executeImport = document.getElementById('executeImport');
-        if (executeImport) executeImport.addEventListener('click', () => this.executeImport());
+        // Habit management
+        document.getElementById('addHabit')?.addEventListener('click', () => this.addCustomHabit());
+        document.getElementById('newHabit')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.addCustomHabit();
+        });
         
-        // Goals - Fixed
-        const saveWeeklyGoals = document.getElementById('saveWeeklyGoals');
-        const saveMonthlyGoals = document.getElementById('saveMonthlyGoals');
-        const saveYearlyGoals = document.getElementById('saveYearlyGoals');
-        const weekGoalSelector = document.getElementById('weekGoalSelector');
-        const monthGoalSelector = document.getElementById('monthGoalSelector');
-        const yearGoalSelector = document.getElementById('yearGoalSelector');
+        // Auto-save
+        document.getElementById('dailyText')?.addEventListener('input', () => this.autoSave());
         
-        if (saveWeeklyGoals) saveWeeklyGoals.addEventListener('click', () => this.saveWeeklyGoals());
-        if (saveMonthlyGoals) saveMonthlyGoals.addEventListener('click', () => this.saveMonthlyGoals());
-        if (saveYearlyGoals) saveYearlyGoals.addEventListener('click', () => this.saveYearlyGoals());
-        if (weekGoalSelector) weekGoalSelector.addEventListener('change', () => this.loadWeeklyGoals());
-        if (monthGoalSelector) monthGoalSelector.addEventListener('change', () => this.loadMonthlyGoals());
-        if (yearGoalSelector) yearGoalSelector.addEventListener('change', () => this.loadYearlyGoals());
-        
-        // Habit management - Fixed
-        const addHabit = document.getElementById('addHabit');
-        const newHabit = document.getElementById('newHabit');
-        
-        if (addHabit) addHabit.addEventListener('click', () => this.addCustomHabit());
-        if (newHabit) {
-            newHabit.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') this.addCustomHabit();
-            });
-        }
-        
-        // Auto-save for text - Fixed
-        const dailyText = document.getElementById('dailyText');
-        if (dailyText) dailyText.addEventListener('input', () => this.autoSave());
-        
-        // Modal background clicks - Fixed
-        const dailyModal = document.getElementById('dailyModal');
-        const entryViewModal = document.getElementById('entryViewModal');
-        const exportModal = document.getElementById('exportModal');
-        const importModal = document.getElementById('importModal');
-        
-        if (dailyModal) {
-            dailyModal.addEventListener('click', (e) => {
-                if (e.target.id === 'dailyModal') this.closeModal();
-            });
-        }
-        if (entryViewModal) {
-            entryViewModal.addEventListener('click', (e) => {
-                if (e.target.id === 'entryViewModal') this.closeEntryViewModal();
-            });
-        }
-        if (exportModal) {
-            exportModal.addEventListener('click', (e) => {
-                if (e.target.id === 'exportModal') this.closeExportModal();
-            });
-        }
-        if (importModal) {
-            importModal.addEventListener('click', (e) => {
-                if (e.target.id === 'importModal') this.closeImportModal();
-            });
-        }
-    }
-    
-    setupKeyboardShortcuts() {
-        document.addEventListener('keydown', (e) => {
-            // Only process shortcuts when no modal is open and not typing in inputs
-            if (document.querySelector('.modal:not(.hidden)') || 
-                e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-                return;
-            }
-            
-            switch(e.key) {
-                case 'ArrowLeft':
-                    e.preventDefault();
-                    if (this.currentView === 'weekly') this.navigateWeek(-1);
-                    else if (this.currentView === 'monthly') this.navigateMonth(-1);
-                    else if (this.currentView === 'yearly') this.navigateYear(-1);
-                    break;
-                case 'ArrowRight':
-                    e.preventDefault();
-                    if (this.currentView === 'weekly') this.navigateWeek(1);
-                    else if (this.currentView === 'monthly') this.navigateMonth(1);
-                    else if (this.currentView === 'yearly') this.navigateYear(1);
-                    break;
-                case 't':
-                case 'T':
-                    this.goToToday();
-                    break;
-                case '1':
-                    this.switchView('weekly');
-                    break;
-                case '2':
-                    this.switchView('monthly');
-                    break;
-                case '3':
-                    this.switchView('yearly');
-                    break;
-                case '4':
-                    this.switchView('goals');
-                    break;
-            }
+        // Modal background clicks
+        document.getElementById('dailyModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'dailyModal') this.closeModal();
+        });
+        document.getElementById('entryViewModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'entryViewModal') this.closeEntryViewModal();
+        });
+        document.getElementById('exportModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'exportModal') this.closeExportModal();
+        });
+        document.getElementById('importModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'importModal') this.closeImportModal();
+        });
+        document.getElementById('syncSetupModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'syncSetupModal') this.closeSyncSetupModal();
         });
     }
     
@@ -304,27 +642,52 @@ class NEETPGTracker {
         // Update active tab
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('tab-btn--active'));
         const activeTab = document.getElementById(`${view}Tab`);
-        if (activeTab) activeTab.classList.add('tab-btn--active');
+        if (activeTab) {
+            activeTab.classList.add('tab-btn--active');
+        }
         
-        // Hide all views
+        // Hide all main views
         document.querySelectorAll('.main-view').forEach(viewEl => {
             viewEl.classList.add('hidden');
         });
         
         // Show selected view
-        const selectedView = document.getElementById(`${view}View`);
-        if (selectedView) {
-            selectedView.classList.remove('hidden');
-        } else {
-            console.error(`View element ${view}View not found`);
+        const targetView = document.getElementById(`${view}View`);
+        if (targetView) {
+            targetView.classList.remove('hidden');
         }
         
         this.currentView = view;
         this.renderCurrentView();
     }
+
+    switchGoalsView(view) {
+        console.log('Switching to goals view:', view);
+        
+        // Update active goals tab
+        document.querySelectorAll('.goals-tab-btn').forEach(btn => btn.classList.remove('goals-tab-btn--active'));
+        const activeTab = document.getElementById(`${view}GoalsTab`);
+        if (activeTab) {
+            activeTab.classList.add('goals-tab-btn--active');
+        }
+        
+        // Hide all goal sections
+        document.querySelectorAll('.goals-section').forEach(section => {
+            section.classList.add('hidden');
+        });
+        
+        // Show selected section
+        const targetSection = document.getElementById(`${view}GoalsSection`);
+        if (targetSection) {
+            targetSection.classList.remove('hidden');
+        }
+        
+        this.currentGoalsView = view;
+        this.renderGoals();
+    }
     
     renderCurrentView() {
-        console.log('Rendering view:', this.currentView);
+        console.log('Rendering current view:', this.currentView);
         
         switch(this.currentView) {
             case 'weekly':
@@ -335,17 +698,211 @@ class NEETPGTracker {
                 this.renderMonthlyCalendar();
                 this.renderMonthlySummary();
                 break;
-            case 'yearly':
-                this.renderYearlyCalendar();
-                this.renderYearlySummary();
-                break;
             case 'goals':
                 this.renderGoals();
+                this.updateSyncSetupVisibility();
                 break;
         }
     }
-    
-    // Weekly Calendar Methods
+
+    renderGoals() {
+        console.log('Rendering goals, current goals view:', this.currentGoalsView);
+        this.renderWeeklyGoals();
+        this.renderMonthlyGoals();
+        this.renderYearlyGoals();
+    }
+
+    renderWeeklyGoals() {
+        const key = this.getCurrentWeekKey();
+        const goals = this.goals.weekly[key] || [];
+        const progress = this.calculateProgress(goals);
+
+        // Update progress
+        const progressBar = document.getElementById('weeklyProgress');
+        const progressText = document.getElementById('weeklyProgressText');
+        
+        if (progressBar && progressText) {
+            progressBar.style.width = `${progress.percentage}%`;
+            progressText.textContent = `${progress.completed}/${progress.total} completed (${progress.percentage}%)`;
+        }
+
+        // Render goals list
+        const goalsList = document.getElementById('weeklyGoalsList');
+        if (!goalsList) return;
+
+        goalsList.innerHTML = '';
+        goals.forEach(goal => {
+            const goalElement = this.createGoalElement(goal, 'weekly', key);
+            goalsList.appendChild(goalElement);
+        });
+    }
+
+    renderMonthlyGoals() {
+        const key = this.getCurrentMonthKey();
+        const goals = this.goals.monthly[key] || [];
+        const progress = this.calculateProgress(goals);
+
+        // Update progress
+        const progressBar = document.getElementById('monthlyProgress');
+        const progressText = document.getElementById('monthlyProgressText');
+        
+        if (progressBar && progressText) {
+            progressBar.style.width = `${progress.percentage}%`;
+            progressText.textContent = `${progress.completed}/${progress.total} completed (${progress.percentage}%)`;
+        }
+
+        // Render goals list
+        const goalsList = document.getElementById('monthlyGoalsList');
+        if (!goalsList) return;
+
+        goalsList.innerHTML = '';
+        goals.forEach(goal => {
+            const goalElement = this.createGoalElement(goal, 'monthly', key);
+            goalsList.appendChild(goalElement);
+        });
+    }
+
+    renderYearlyGoals() {
+        const key = this.getCurrentYearKey();
+        const goals = this.goals.yearly[key] || [];
+        const progress = this.calculateProgress(goals);
+
+        // Update progress
+        const progressBar = document.getElementById('yearlyProgress');
+        const progressText = document.getElementById('yearlyProgressText');
+        
+        if (progressBar && progressText) {
+            progressBar.style.width = `${progress.percentage}%`;
+            progressText.textContent = `${progress.completed}/${progress.total} completed (${progress.percentage}%)`;
+        }
+
+        // Render goals list
+        const goalsList = document.getElementById('yearlyGoalsList');
+        if (!goalsList) return;
+
+        goalsList.innerHTML = '';
+        goals.forEach(goal => {
+            const goalElement = this.createGoalElement(goal, 'yearly', key);
+            goalsList.appendChild(goalElement);
+        });
+    }
+
+    createGoalElement(goal, period, key) {
+        const goalItem = document.createElement('div');
+        goalItem.className = `goal-item ${goal.completed ? 'completed' : ''}`;
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'goal-checkbox';
+        checkbox.checked = goal.completed;
+        checkbox.addEventListener('change', () => this.toggleGoal(period, key, goal.id));
+
+        const goalContent = document.createElement('div');
+        goalContent.className = 'goal-content';
+
+        const goalText = document.createElement('div');
+        goalText.className = 'goal-text';
+        goalText.textContent = goal.text;
+
+        const goalDate = document.createElement('div');
+        goalDate.className = 'goal-date';
+        goalDate.textContent = `Added: ${new Date(goal.dateAdded).toLocaleDateString()}`;
+
+        goalContent.appendChild(goalText);
+        goalContent.appendChild(goalDate);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'goal-remove';
+        removeBtn.textContent = '×';
+        removeBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to remove this goal?')) {
+                this.removeGoal(period, key, goal.id);
+            }
+        });
+
+        goalItem.appendChild(checkbox);
+        goalItem.appendChild(goalContent);
+        goalItem.appendChild(removeBtn);
+
+        return goalItem;
+    }
+
+    // Sync Setup Methods
+    openSyncSetupModal() {
+        document.getElementById('syncSetupModal')?.classList.remove('hidden');
+    }
+
+    closeSyncSetupModal() {
+        document.getElementById('syncSetupModal')?.classList.add('hidden');
+    }
+
+    async testConnection() {
+        const tokenInput = document.getElementById('githubToken');
+        const resultDiv = document.getElementById('syncTestResult');
+        
+        if (!tokenInput || !resultDiv) return;
+
+        const token = tokenInput.value.trim();
+        if (!token) {
+            this.showSyncTestResult('Please enter a GitHub token', 'error');
+            return;
+        }
+
+        this.showSyncTestResult('Testing connection...', 'info');
+        
+        const result = await this.testGitHubConnection(token);
+        
+        if (result.success) {
+            this.showSyncTestResult(`✅ Connected as ${result.user.login}`, 'success');
+        } else {
+            this.showSyncTestResult(`❌ ${result.error}`, 'error');
+        }
+    }
+
+    showSyncTestResult(message, type) {
+        const resultDiv = document.getElementById('syncTestResult');
+        if (!resultDiv) return;
+
+        resultDiv.textContent = message;
+        resultDiv.className = `sync-test-result ${type}`;
+        resultDiv.classList.remove('hidden');
+    }
+
+    async enableSync() {
+        const tokenInput = document.getElementById('githubToken');
+        if (!tokenInput) return;
+
+        const token = tokenInput.value.trim();
+        if (!token) {
+            this.showToast('Please enter a GitHub token', 'error');
+            return;
+        }
+
+        // Test connection first
+        const testResult = await this.testGitHubConnection(token);
+        if (!testResult.success) {
+            this.showToast(`Connection failed: ${testResult.error}`, 'error');
+            return;
+        }
+
+        // Enable sync
+        this.syncConfig.enabled = true;
+        this.syncConfig.githubToken = token;
+        this.saveData();
+
+        // Update sync setup visibility and close modal
+        this.updateSyncSetupVisibility();
+        this.closeSyncSetupModal();
+
+        // Start auto-sync and perform initial sync
+        this.startAutoSync();
+        this.updateSyncStatus('syncing', 'Initial sync...');
+        await this.syncToGist();
+
+        this.showToast('GitHub sync enabled successfully! 🎉', 'success');
+    }
+
+    // Weekly Calendar Methods (same as before but updated for NEET-PG)
     getWeekStart(date) {
         const d = new Date(date);
         const day = d.getDay();
@@ -401,12 +958,12 @@ class NEETPGTracker {
         dayNumber.textContent = date.getDate();
         dayElement.appendChild(dayNumber);
         
-        // Entry preview (full text in weekly view)
+        // Entry preview
         if (this.entries[dateString]) {
             const preview = document.createElement('div');
             preview.className = 'day-preview';
-            const text = this.entries[dateString].text || '';
-            preview.textContent = text; // Show full text in weekly view
+            const text = this.entries[dateString].text;
+            preview.textContent = text.length > 100 ? text.substring(0, 100) + '...' : text;
             preview.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.openEntryView(date);
@@ -433,12 +990,8 @@ class NEETPGTracker {
             }
         }
         
-        // Click handler - Fixed to properly open modal
-        dayElement.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            this.openDayEntry(date);
-        });
+        // Click handler
+        dayElement.addEventListener('click', () => this.openDayEntry(date));
         
         return dayElement;
     }
@@ -505,21 +1058,8 @@ class NEETPGTracker {
         dayNumber.textContent = date.getDate();
         dayElement.appendChild(dayNumber);
         
-        // Entry preview (100 chars max)
+        // Habits indicator
         if (this.entries[dateString]) {
-            const text = this.entries[dateString].text || '';
-            if (text) {
-                const preview = document.createElement('div');
-                preview.className = 'day-preview';
-                preview.textContent = text.length > 100 ? text.substring(0, 100) + '...' : text;
-                preview.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    this.openEntryView(date);
-                });
-                dayElement.appendChild(preview);
-            }
-            
-            // Habits indicator
             const habits = this.entries[dateString].habits || {};
             const completedHabits = Object.keys(habits).filter(habit => habits[habit]);
             
@@ -539,128 +1079,12 @@ class NEETPGTracker {
             }
         }
         
-        // Click handler - Fixed
-        dayElement.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            this.openDayEntry(date);
-        });
+        // Click handler
+        dayElement.addEventListener('click', () => this.openDayEntry(date));
         
         return dayElement;
     }
     
-    // Yearly Calendar Methods
-    navigateYear(direction) {
-        this.currentYear += direction;
-        this.renderYearlyCalendar();
-        this.renderYearlySummary();
-    }
-    
-    renderYearlyCalendar() {
-        const yearTitle = document.getElementById('yearTitle');
-        const yearlyCalendarMonths = document.getElementById('yearlyCalendarMonths');
-        
-        if (!yearTitle || !yearlyCalendarMonths) return;
-        
-        yearTitle.textContent = this.currentYear.toString();
-        yearlyCalendarMonths.innerHTML = '';
-        
-        // Create 12 months
-        for (let month = 0; month < 12; month++) {
-            const monthElement = this.createYearlyMonthElement(month);
-            yearlyCalendarMonths.appendChild(monthElement);
-        }
-    }
-    
-    createYearlyMonthElement(month) {
-        const monthDate = new Date(this.currentYear, month, 1);
-        const monthElement = document.createElement('div');
-        monthElement.className = 'yearly-month';
-        
-        // Month title
-        const title = document.createElement('div');
-        title.className = 'yearly-month-title';
-        title.textContent = monthDate.toLocaleDateString('en-US', { month: 'long' });
-        monthElement.appendChild(title);
-        
-        // Month grid
-        const grid = document.createElement('div');
-        grid.className = 'yearly-month-grid';
-        
-        // Day headers
-        const dayHeaders = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-        dayHeaders.forEach(day => {
-            const header = document.createElement('div');
-            header.className = 'yearly-day-header';
-            header.textContent = day;
-            grid.appendChild(header);
-        });
-        
-        // Days
-        const firstDay = new Date(this.currentYear, month, 1);
-        const lastDay = new Date(this.currentYear, month + 1, 0);
-        const daysInMonth = lastDay.getDate();
-        const startDay = firstDay.getDay();
-        
-        // Empty cells
-        for (let i = 0; i < startDay; i++) {
-            const emptyDay = document.createElement('div');
-            grid.appendChild(emptyDay);
-        }
-        
-        // Month days
-        for (let day = 1; day <= daysInMonth; day++) {
-            const date = new Date(this.currentYear, month, day);
-            const dayElement = this.createYearlyDayElement(date);
-            grid.appendChild(dayElement);
-        }
-        
-        monthElement.appendChild(grid);
-        return monthElement;
-    }
-    
-    createYearlyDayElement(date) {
-        const dateString = this.formatDate(date);
-        const dayElement = document.createElement('div');
-        dayElement.className = 'yearly-day';
-        dayElement.textContent = date.getDate();
-        
-        if (date.toDateString() === new Date().toDateString()) {
-            dayElement.classList.add('today');
-        }
-        
-        if (this.entries[dateString]) {
-            dayElement.classList.add('has-entry');
-            
-            // Show habit dots
-            const habits = this.entries[dateString].habits || {};
-            const completedHabits = Object.keys(habits).filter(habit => habits[habit]);
-            
-            if (completedHabits.length > 0) {
-                const habitsDiv = document.createElement('div');
-                habitsDiv.className = 'yearly-habits';
-                
-                completedHabits.slice(0, 4).forEach(habit => {
-                    const dot = document.createElement('div');
-                    dot.className = 'yearly-habit-dot';
-                    dot.style.backgroundColor = this.habitColors[habit] || this.getRandomColor();
-                    habitsDiv.appendChild(dot);
-                });
-                
-                dayElement.appendChild(habitsDiv);
-            }
-        }
-        
-        // Click handler - Fixed
-        dayElement.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            this.openDayEntry(date);
-        });
-        return dayElement;
-    }
-    
-    // Summary Methods
     renderMonthlySummary() {
         const summaryContent = document.getElementById('monthlySummaryContent');
         if (!summaryContent) return;
@@ -670,33 +1094,45 @@ class NEETPGTracker {
         // Calculate monthly stats
         const monthStart = new Date(this.currentMonth);
         const monthEnd = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth() + 1, 0);
-        const stats = this.calculateStats(monthStart, monthEnd);
+        const stats = this.calculateMonthlyStats(monthStart, monthEnd);
         
-        this.renderSummaryStats(summaryContent, stats);
+        // Total entries
+        const totalEntries = document.createElement('div');
+        totalEntries.className = 'summary-stat';
+        totalEntries.innerHTML = `
+            <span class="summary-label">Total Study Days</span>
+            <span class="summary-value">${stats.totalEntries}</span>
+        `;
+        summaryContent.appendChild(totalEntries);
+        
+        // Most consistent habit
+        if (stats.topHabit) {
+            const topHabit = document.createElement('div');
+            topHabit.className = 'summary-stat';
+            topHabit.innerHTML = `
+                <span class="summary-label">Most Consistent Habit</span>
+                <span class="summary-value">${stats.topHabit.name} (${stats.topHabit.count} days)</span>
+            `;
+            summaryContent.appendChild(topHabit);
+        }
+        
+        // Average entry length
+        const avgLength = document.createElement('div');
+        avgLength.className = 'summary-stat';
+        avgLength.innerHTML = `
+            <span class="summary-label">Average Entry Length</span>
+            <span class="summary-value">${stats.avgEntryLength} words</span>
+        `;
+        summaryContent.appendChild(avgLength);
     }
     
-    renderYearlySummary() {
-        const summaryContent = document.getElementById('yearlySummaryContent');
-        if (!summaryContent) return;
-        
-        summaryContent.innerHTML = '';
-        
-        // Calculate yearly stats
-        const yearStart = new Date(this.currentYear, 0, 1);
-        const yearEnd = new Date(this.currentYear, 11, 31);
-        const stats = this.calculateStats(yearStart, yearEnd);
-        
-        this.renderSummaryStats(summaryContent, stats);
-    }
-    
-    calculateStats(startDate, endDate) {
+    calculateMonthlyStats(startDate, endDate) {
         const stats = {
             totalEntries: 0,
             totalWords: 0,
             habitCounts: {},
             topHabit: null,
-            avgEntryLength: 0,
-            studyDays: 0
+            avgEntryLength: 0
         };
         
         const current = new Date(startDate);
@@ -706,8 +1142,6 @@ class NEETPGTracker {
             
             if (entry) {
                 stats.totalEntries++;
-                stats.studyDays++;
-                
                 if (entry.text) {
                     stats.totalWords += entry.text.split(' ').length;
                 }
@@ -737,176 +1171,6 @@ class NEETPGTracker {
             Math.round(stats.totalWords / stats.totalEntries) : 0;
         
         return stats;
-    }
-    
-    renderSummaryStats(container, stats) {
-        const statsData = [
-            { label: 'Study Days', value: stats.studyDays },
-            { label: 'Total Entries', value: stats.totalEntries },
-            { label: 'Total Words Written', value: stats.totalWords.toLocaleString() },
-            { label: 'Average Entry Length', value: `${stats.avgEntryLength} words` }
-        ];
-        
-        if (stats.topHabit) {
-            statsData.push({
-                label: 'Most Consistent Habit',
-                value: `${stats.topHabit.name} (${stats.topHabit.count} days)`
-            });
-        }
-        
-        statsData.forEach(stat => {
-            const statElement = document.createElement('div');
-            statElement.className = 'summary-stat';
-            statElement.innerHTML = `
-                <span class="summary-label">${stat.label}</span>
-                <span class="summary-value">${stat.value}</span>
-            `;
-            container.appendChild(statElement);
-        });
-    }
-    
-    // Goals Methods
-    setupGoalsSelectors() {
-        this.setupWeekGoalSelector();
-        this.setupMonthGoalSelector();
-        this.setupYearGoalSelector();
-    }
-    
-    setupWeekGoalSelector() {
-        const selector = document.getElementById('weekGoalSelector');
-        if (!selector) return;
-        
-        selector.innerHTML = '';
-        const currentDate = new Date();
-        
-        // Add current and next few weeks
-        for (let i = -4; i <= 8; i++) {
-            const weekStart = new Date(currentDate);
-            weekStart.setDate(currentDate.getDate() + (i * 7));
-            const weekStartFormatted = this.getWeekStart(weekStart);
-            const weekEnd = new Date(weekStartFormatted);
-            weekEnd.setDate(weekEnd.getDate() + 6);
-            
-            const weekNumber = this.getWeekNumber(weekStartFormatted);
-            const option = document.createElement('option');
-            option.value = `${weekStartFormatted.getFullYear()}-W${weekNumber}`;
-            option.textContent = `Week ${weekNumber}, ${weekStartFormatted.getFullYear()} (${this.formatDateShort(weekStartFormatted)} - ${this.formatDateShort(weekEnd)})`;
-            
-            if (i === 0) option.selected = true;
-            selector.appendChild(option);
-        }
-    }
-    
-    setupMonthGoalSelector() {
-        const selector = document.getElementById('monthGoalSelector');
-        if (!selector) return;
-        
-        selector.innerHTML = '';
-        const currentYear = this.currentDate.getFullYear();
-        
-        for (let year = currentYear - 1; year <= currentYear + 1; year++) {
-            for (let month = 0; month < 12; month++) {
-                const date = new Date(year, month, 1);
-                const option = document.createElement('option');
-                option.value = `${year}-${String(month + 1).padStart(2, '0')}`;
-                option.textContent = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-                
-                if (year === currentYear && month === this.currentDate.getMonth()) {
-                    option.selected = true;
-                }
-                selector.appendChild(option);
-            }
-        }
-    }
-    
-    setupYearGoalSelector() {
-        const selector = document.getElementById('yearGoalSelector');
-        if (!selector) return;
-        
-        selector.innerHTML = '';
-        const currentYear = this.currentDate.getFullYear();
-        
-        for (let year = currentYear - 2; year <= currentYear + 5; year++) {
-            const option = document.createElement('option');
-            option.value = year.toString();
-            option.textContent = year.toString();
-            if (year === currentYear) {
-                option.selected = true;
-            }
-            selector.appendChild(option);
-        }
-    }
-    
-    renderGoals() {
-        this.loadWeeklyGoals();
-        this.loadMonthlyGoals();
-        this.loadYearlyGoals();
-    }
-    
-    loadWeeklyGoals() {
-        const selector = document.getElementById('weekGoalSelector');
-        const textarea = document.getElementById('weeklyGoals');
-        
-        if (selector && textarea) {
-            const weekKey = selector.value;
-            textarea.value = this.goals.weekly[weekKey] || '';
-        }
-    }
-    
-    loadMonthlyGoals() {
-        const selector = document.getElementById('monthGoalSelector');
-        const textarea = document.getElementById('monthlyGoals');
-        
-        if (selector && textarea) {
-            const monthKey = selector.value;
-            textarea.value = this.goals.monthly[monthKey] || '';
-        }
-    }
-    
-    loadYearlyGoals() {
-        const selector = document.getElementById('yearGoalSelector');
-        const textarea = document.getElementById('yearlyGoals');
-        
-        if (selector && textarea) {
-            const yearKey = selector.value;
-            textarea.value = this.goals.yearly[yearKey] || '';
-        }
-    }
-    
-    saveWeeklyGoals() {
-        const selector = document.getElementById('weekGoalSelector');
-        const textarea = document.getElementById('weeklyGoals');
-        
-        if (selector && textarea) {
-            const weekKey = selector.value;
-            this.goals.weekly[weekKey] = textarea.value.trim();
-            this.saveData();
-            this.showToast('Weekly goals saved!', 'success');
-        }
-    }
-    
-    saveMonthlyGoals() {
-        const selector = document.getElementById('monthGoalSelector');
-        const textarea = document.getElementById('monthlyGoals');
-        
-        if (selector && textarea) {
-            const monthKey = selector.value;
-            this.goals.monthly[monthKey] = textarea.value.trim();
-            this.saveData();
-            this.showToast('Monthly goals saved!', 'success');
-        }
-    }
-    
-    saveYearlyGoals() {
-        const selector = document.getElementById('yearGoalSelector');
-        const textarea = document.getElementById('yearlyGoals');
-        
-        if (selector && textarea) {
-            const yearKey = selector.value;
-            this.goals.yearly[yearKey] = textarea.value.trim();
-            this.saveData();
-            this.showToast('Yearly goals saved!', 'success');
-        }
     }
     
     // Habit Legend
@@ -941,15 +1205,10 @@ class NEETPGTracker {
     
     // Entry Management
     goToToday() {
-        const today = new Date();
-        this.currentDate = today;
-        this.currentWeekStart = this.getWeekStart(today);
-        this.currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        this.currentYear = today.getFullYear();
+        this.currentDate = new Date();
+        this.currentWeekStart = this.getWeekStart(this.currentDate);
+        this.currentMonth = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), 1);
         this.renderCurrentView();
-        
-        // Open today's entry if Today button clicked
-        this.openDayEntry(today);
     }
     
     highlightToday() {
@@ -963,34 +1222,18 @@ class NEETPGTracker {
     }
     
     openDayEntry(date) {
-        console.log('Opening day entry for:', date);
         this.selectedDate = date;
         const dateString = this.formatDate(date);
         
-        // Set modal title with correct date
-        const modalDate = document.getElementById('modalDate');
-        if (modalDate) {
-            modalDate.textContent = this.formatDateDisplay(date);
-        }
+        // Set modal title
+        document.getElementById('modalDate').textContent = this.formatDateDisplay(date);
         
         // Load existing entry
         const entry = this.entries[dateString] || { text: '', habits: {} };
-        const dailyText = document.getElementById('dailyText');
-        if (dailyText) {
-            dailyText.value = entry.text || '';
-        }
+        document.getElementById('dailyText').value = entry.text || '';
         
         this.renderHabits(entry.habits || {});
-        
-        const modal = document.getElementById('dailyModal');
-        if (modal) {
-            modal.classList.remove('hidden');
-            
-            // Focus on text area after modal opens
-            setTimeout(() => {
-                if (dailyText) dailyText.focus();
-            }, 100);
-        }
+        document.getElementById('dailyModal').classList.remove('hidden');
     }
     
     openEntryView(date) {
@@ -999,20 +1242,15 @@ class NEETPGTracker {
         
         if (!entry) return;
         
-        const entryViewDate = document.getElementById('entryViewDate');
-        if (entryViewDate) {
-            entryViewDate.textContent = `NEET-PG Study Entry - ${this.formatDateDisplay(date)}`;
-        }
+        document.getElementById('entryViewDate').textContent = `NEET-PG Entry for ${this.formatDateDisplay(date)}`;
         
         const content = document.getElementById('entryViewContent');
-        if (!content) return;
-        
         content.innerHTML = '';
         
         // Full text
         if (entry.text) {
             const textSection = document.createElement('div');
-            textSection.innerHTML = '<h4>Study Details</h4>';
+            textSection.innerHTML = '<h4>Daily NEET-PG Study Log</h4>';
             
             const textContent = document.createElement('div');
             textContent.className = 'entry-full-text';
@@ -1025,7 +1263,7 @@ class NEETPGTracker {
         // Habits
         if (entry.habits) {
             const habitsSection = document.createElement('div');
-            habitsSection.innerHTML = '<h4>Study Habits Completed</h4>';
+            habitsSection.innerHTML = '<h4>NEET-PG Habits</h4>';
             
             const habitsList = document.createElement('div');
             habitsList.className = 'entry-habits-list';
@@ -1054,10 +1292,7 @@ class NEETPGTracker {
             content.appendChild(habitsSection);
         }
         
-        const entryViewModal = document.getElementById('entryViewModal');
-        if (entryViewModal) {
-            entryViewModal.classList.remove('hidden');
-        }
+        document.getElementById('entryViewModal').classList.remove('hidden');
     }
     
     renderHabits(completedHabits = {}) {
@@ -1090,7 +1325,6 @@ class NEETPGTracker {
                 const removeBtn = document.createElement('button');
                 removeBtn.className = 'habit-remove';
                 removeBtn.textContent = '×';
-                removeBtn.title = 'Remove habit';
                 removeBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     this.removeCustomHabit(habit);
@@ -1121,35 +1355,29 @@ class NEETPGTracker {
             }
             
             this.renderHabitLegend();
-            this.showToast(`Added custom habit: ${habitName}`, 'success');
-        } else if (habitName) {
-            this.showToast('Habit already exists!', 'error');
         }
     }
     
     removeCustomHabit(habitName) {
-        if (confirm(`Remove "${habitName}" habit? This will delete it from all entries.`)) {
-            this.customHabits = this.customHabits.filter(h => h !== habitName);
-            delete this.habitColors[habitName];
-            
-            Object.keys(this.entries).forEach(date => {
-                if (this.entries[date].habits && this.entries[date].habits[habitName] !== undefined) {
-                    delete this.entries[date].habits[habitName];
-                }
-            });
-            
-            this.saveData();
-            
-            if (this.selectedDate) {
-                const dateString = this.formatDate(this.selectedDate);
-                const entry = this.entries[dateString] || {};
-                this.renderHabits(entry.habits || {});
+        this.customHabits = this.customHabits.filter(h => h !== habitName);
+        delete this.habitColors[habitName];
+        
+        Object.keys(this.entries).forEach(date => {
+            if (this.entries[date].habits && this.entries[date].habits[habitName] !== undefined) {
+                delete this.entries[date].habits[habitName];
             }
-            
-            this.renderHabitLegend();
-            this.renderCurrentView();
-            this.showToast(`Removed habit: ${habitName}`, 'success');
+        });
+        
+        this.saveData();
+        
+        if (this.selectedDate) {
+            const dateString = this.formatDate(this.selectedDate);
+            const entry = this.entries[dateString] || {};
+            this.renderHabits(entry.habits || {});
         }
+        
+        this.renderHabitLegend();
+        this.renderCurrentView();
     }
     
     getAllHabits() {
@@ -1166,8 +1394,7 @@ class NEETPGTracker {
         if (!this.selectedDate) return;
         
         const dateString = this.formatDate(this.selectedDate);
-        const dailyText = document.getElementById('dailyText');
-        const text = dailyText ? dailyText.value || '' : '';
+        const text = document.getElementById('dailyText')?.value || '';
         
         const habits = {};
         const allHabits = this.getAllHabits();
@@ -1191,52 +1418,45 @@ class NEETPGTracker {
         this.saveCurrentEntry();
         this.closeModal();
         this.renderCurrentView();
-        this.showToast('NEET-PG study entry saved!', 'success');
+        this.showToast('NEET-PG entry saved successfully! 🎯', 'success');
     }
     
-    // Modal Management - Fixed
+    // Modal Management
     closeModal() {
-        const modal = document.getElementById('dailyModal');
-        if (modal) modal.classList.add('hidden');
+        document.getElementById('dailyModal')?.classList.add('hidden');
         this.selectedDate = null;
     }
     
     closeEntryViewModal() {
-        const modal = document.getElementById('entryViewModal');
-        if (modal) modal.classList.add('hidden');
+        document.getElementById('entryViewModal')?.classList.add('hidden');
     }
     
     openExportModal() {
-        const modal = document.getElementById('exportModal');
-        if (modal) modal.classList.remove('hidden');
+        document.getElementById('exportModal')?.classList.remove('hidden');
     }
     
     closeExportModal() {
-        const modal = document.getElementById('exportModal');
-        if (modal) modal.classList.add('hidden');
+        document.getElementById('exportModal')?.classList.add('hidden');
     }
     
     openImportModal() {
-        const modal = document.getElementById('importModal');
-        if (modal) modal.classList.remove('hidden');
+        document.getElementById('importModal')?.classList.remove('hidden');
     }
     
     closeImportModal() {
-        const modal = document.getElementById('importModal');
-        if (modal) modal.classList.add('hidden');
+        document.getElementById('importModal')?.classList.add('hidden');
     }
     
-    // Export/Import Methods - Fixed
+    // Export/Import Methods
     exportData(format) {
         const data = {
             entries: this.entries,
             customHabits: this.customHabits,
             habitColors: this.habitColors,
             goals: this.goals,
+            syncConfig: { ...this.syncConfig, githubToken: null }, // Don't export token
             exportDate: new Date().toISOString(),
-            version: "3.0.0",
-            user: "Amit",
-            purpose: "NEET-PG Study Tracking"
+            version: "3.0.0"
         };
         
         const timestamp = new Date().toISOString().split('T')[0];
@@ -1244,24 +1464,24 @@ class NEETPGTracker {
         if (format === 'json') {
             this.downloadFile(
                 JSON.stringify(data, null, 2),
-                `amit-neetpg-tracker-${timestamp}.json`,
+                `neetpg-tracker-export-${timestamp}.json`,
                 'application/json'
             );
         } else if (format === 'csv') {
             const csv = this.convertToCSV(data);
             this.downloadFile(
                 csv,
-                `amit-neetpg-tracker-${timestamp}.csv`,
+                `neetpg-tracker-export-${timestamp}.csv`,
                 'text/csv'
             );
         }
         
         this.closeExportModal();
-        this.showToast(`NEET-PG data exported as ${format.toUpperCase()}!`, 'success');
+        this.showToast(`NEET-PG data exported as ${format.toUpperCase()}! 📊`, 'success');
     }
     
     convertToCSV(data) {
-        const headers = ['Date', 'Study Entry', 'Word Count', ...this.getAllHabits()];
+        const headers = ['Date', 'Entry Text', 'Word Count', ...this.getAllHabits()];
         const rows = [headers];
         
         Object.keys(data.entries).sort().forEach(date => {
@@ -1283,27 +1503,22 @@ class NEETPGTracker {
     }
     
     downloadFile(content, filename, contentType) {
-        try {
-            const blob = new Blob([content], { type: contentType });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error('Download error:', error);
-            this.showToast('Error downloading file. Please try again.', 'error');
-        }
+        const blob = new Blob([content], { type: contentType });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     }
     
     executeImport() {
         const fileInput = document.getElementById('importFile');
         const mode = document.querySelector('input[name="importMode"]:checked')?.value || 'merge';
         
-        if (!fileInput || !fileInput.files.length) {
+        if (!fileInput.files.length) {
             this.showToast('Please select a file to import.', 'error');
             return;
         }
@@ -1343,18 +1558,13 @@ class NEETPGTracker {
                 this.saveData();
                 this.renderCurrentView();
                 this.renderHabitLegend();
-                this.setupGoalsSelectors();
                 this.closeImportModal();
-                this.showToast('NEET-PG data imported successfully!', 'success');
+                this.showToast('NEET-PG data imported successfully! 🎉', 'success');
                 
             } catch (error) {
                 this.showToast('Error importing data. Please check the file format.', 'error');
                 console.error('Import error:', error);
             }
-        };
-        
-        reader.onerror = () => {
-            this.showToast('Error reading file. Please try again.', 'error');
         };
         
         reader.readAsText(file);
@@ -1373,19 +1583,6 @@ class NEETPGTracker {
         });
     }
     
-    formatDateShort(date) {
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric'
-        });
-    }
-    
-    getWeekNumber(date) {
-        const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
-        const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
-        return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-    }
-    
     showToast(message, type = 'success') {
         const toast = document.getElementById('toast');
         const toastMessage = document.getElementById('toastMessage');
@@ -1393,22 +1590,16 @@ class NEETPGTracker {
         if (toast && toastMessage) {
             toastMessage.textContent = message;
             toast.className = `toast ${type}`;
-            toast.classList.remove('hidden');
             
             setTimeout(() => {
                 toast.classList.add('hidden');
-            }, 4000);
+            }, 3000);
         }
     }
 }
 
-// Initialize the NEET-PG tracker immediately when DOM is loaded
+// Initialize the app
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, starting NEET-PG Tracker for Amit...');
-    try {
-        new NEETPGTracker();
-        console.log('NEET-PG Tracker initialized successfully!');
-    } catch (error) {
-        console.error('Error initializing NEET-PG Tracker:', error);
-    }
+    console.log('DOM loaded, initializing Enhanced NEET-PG Tracker...');
+    new NEETPGTracker();
 });
