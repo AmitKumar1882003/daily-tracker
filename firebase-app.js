@@ -46,6 +46,7 @@ class FirebaseDailyTracker {
         this.habitColors = {};
         this.goals = { weekly: {}, monthly: {}, yearly: {} };
         this.achievements = {};
+        this.theme = localStorage.getItem('dailyTrackerTheme') || 'light';
         
         // Config
         this.availableColors = [
@@ -113,7 +114,6 @@ class FirebaseDailyTracker {
         // Internal state
         this.autoSaveTimer = null;
         this.firebaseSyncTimer = null;
-        this.currentTheme = localStorage.getItem('dailyTrackerTheme') || 'light';
         this.habitChartInstance = null;
         
         // Performance: Cache DOM elements
@@ -235,6 +235,12 @@ class FirebaseDailyTracker {
             if (userDoc.exists) {
                 const data = userDoc.data();
                 this.userName = data.userName || this.userName;
+                // Load theme from Firestore and sync it
+                if (data.theme) {
+                    this.theme = data.theme;
+                    localStorage.setItem('dailyTrackerTheme', this.theme);
+                    document.documentElement.setAttribute('data-color-scheme', this.theme);
+                }
                 this.entries = data.entries || {};
                 this.habits = data.habits || this.getDefaultHabits();
                 this.habitColors = { ...this.getDefaultHabitColors(), ...(data.habitColors || {}) };
@@ -242,7 +248,7 @@ class FirebaseDailyTracker {
                 this.achievements = data.achievements || {};
             } else {
                 this.initializeDefaultData();
-                await this.saveUserDataToFirestore(true); // Initial save for new user
+                await this.saveUserDataToFirestore({ isInitial: true }); // Initial save for new user
             }
         } catch (error) {
             console.error("Error loading user data:", error);
@@ -251,12 +257,16 @@ class FirebaseDailyTracker {
         }
     }
     
-    async saveUserDataToFirestore(isInitial = false) {
+    async saveUserDataToFirestore(options = {}) {
+        const { isInitial = false, silent = false } = options;
         if (!this.userId) return;
-        this.updateSyncStatus('syncing');
+        
+        if (!silent) this.updateSyncStatus('syncing');
+        
         try {
             const userData = {
                 userName: this.userName,
+                theme: this.theme,
                 entries: this.entries,
                 habits: this.habits,
                 habitColors: this.habitColors,
@@ -266,12 +276,19 @@ class FirebaseDailyTracker {
                 version: "13.1.0"
             };
             await db.collection('users').doc(this.userId).set(userData, { merge: true });
-            if (!isInitial) this.showToast('Data synced to cloud!', 'success');
-            this.updateSyncStatus('synced');
+            
+            if (!isInitial && !silent) {
+                this.showToast('Data synced to cloud!', 'success');
+            }
+            if (!silent) {
+                this.updateSyncStatus('synced');
+            }
         } catch (error) {
             console.error("Error saving user data:", error);
-            this.updateSyncStatus('error');
-            this.showToast('Error syncing data to cloud', 'error');
+            if (!silent) {
+                this.updateSyncStatus('error');
+                this.showToast('Error syncing data to cloud', 'error');
+            }
         }
     }
     
@@ -1257,14 +1274,15 @@ class FirebaseDailyTracker {
     }
     
     initializeTheme() {
-        this.updateThemeButton(this.currentTheme);
-        document.documentElement.setAttribute('data-color-scheme', this.currentTheme);
+        this.updateThemeButton(this.theme);
+        document.documentElement.setAttribute('data-color-scheme', this.theme);
     }
 
     toggleTheme() {
-        this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
-        localStorage.setItem('dailyTrackerTheme', this.currentTheme);
+        this.theme = this.theme === 'light' ? 'dark' : 'light';
+        localStorage.setItem('dailyTrackerTheme', this.theme);
         this.initializeTheme();
+        this.saveUserDataToFirestore({ silent: true }); // Sync theme change
     }
     
     updateThemeButton(theme) {
