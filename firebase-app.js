@@ -1,7 +1,7 @@
 // FIREBASE-INTEGRATED Daily Activity Tracker - COMPLETE VERSION
-// Version 6.2 - Full Habit Control
+// Version 6.3 - Login Flow Fix
 
-console.log('🚀 Firebase Daily Tracker Loading - v6.2');
+console.log('🚀 Firebase Daily Tracker Loading - v6.3');
 
 // Firebase Configuration and Imports
 const firebaseConfig = {
@@ -78,6 +78,10 @@ class FirebaseDailyTracker {
             auth = window.firebase.auth();
             db = window.firebase.firestore();
             console.log('✅ Firebase initialized successfully');
+
+            // FIX: Setup login listeners immediately so the form works for new users.
+            this.setupLoginListeners();
+
             auth.onAuthStateChanged((user) => {
                 if (user) {
                     this.handleUserSignedIn(user);
@@ -141,13 +145,15 @@ class FirebaseDailyTracker {
     async signIn() {
         const email = document.getElementById('loginEmail').value.trim();
         const password = document.getElementById('loginPassword').value;
+        const loginBtn = document.getElementById('loginBtn');
+
         if (!email || !password) {
             this.showToast('Please enter both email and password', 'warning');
             return;
         }
         try {
-            document.getElementById('loginBtn').disabled = true;
-            document.getElementById('loginBtn').textContent = 'Signing in...';
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = 'Signing in...';
             await auth.signInWithEmailAndPassword(email, password);
         } catch (error) {
             if (error.code === 'auth/user-not-found') {
@@ -161,8 +167,8 @@ class FirebaseDailyTracker {
                 this.showToast(`Sign in error: ${error.message}`, 'error');
             }
         } finally {
-            document.getElementById('loginBtn').disabled = false;
-            document.getElementById('loginBtn').textContent = 'Sign In';
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = '🔐 Sign In'; // Restore button text with icon
         }
     }
     
@@ -183,11 +189,9 @@ class FirebaseDailyTracker {
                 const data = userDoc.data();
                 this.entries = data.entries || {};
                 
-                // Logic to handle both new and old habit data structures
                 if (data.habits) {
-                    this.habits = data.habits; // New unified structure
+                    this.habits = data.habits;
                 } else {
-                    // Migration for old data: combine default and custom
                     const defaultHabits = [
                         "Study/Learning", "Exercise", "Reading", "Planning",
                         "Review Sessions", "Project Work", "Skill Development", "Health Care"
@@ -212,11 +216,11 @@ class FirebaseDailyTracker {
         try {
             const userData = {
                 entries: this.entries,
-                habits: this.habits, // Save the new unified list
+                habits: this.habits,
                 habitColors: this.habitColors,
                 goals: this.goals,
                 lastUpdated: new Date().toISOString(),
-                version: "6.2.0"
+                version: "6.3.0"
             };
             await db.collection('users').doc(this.userId).set(userData, { merge: true });
             this.updateSyncStatus('synced');
@@ -233,7 +237,6 @@ class FirebaseDailyTracker {
     }
     
     initializeSampleData() {
-        // New users start with the original 8 habits, which they can now delete/edit
         this.habits = [
             "Study/Learning", "Exercise", "Reading", "Planning",
             "Review Sessions", "Project Work", "Skill Development", "Health Care"
@@ -246,17 +249,24 @@ class FirebaseDailyTracker {
     
     initializeApp() {
         this.displayMotivationalQuote();
-        this.setupEventListeners();
+        this.setupAppEventListeners();
         this.setupKeyboardShortcuts();
         this.renderCurrentView();
         this.setupGoalsSelectors();
     }
-    
-    setupEventListeners() {
+
+    // New method for login-specific listeners
+    setupLoginListeners() {
+        console.log('🔧 Setting up LOGIN event listeners...');
         this.addListener('loginBtn', 'click', () => this.signIn());
-        this.addListener('signOutBtn', 'click', () => this.signOut());
         this.addEnterListener('loginEmail', () => this.signIn());
         this.addEnterListener('loginPassword', () => this.signIn());
+    }
+    
+    // Renamed from setupEventListeners to avoid confusion
+    setupAppEventListeners() {
+        console.log('🔧 Setting up APP event listeners...');
+        this.addListener('signOutBtn', 'click', () => this.signOut());
         this.addListener('weeklyTab', 'click', () => this.switchView('weekly'));
         this.addListener('monthlyTab', 'click', () => this.switchView('monthly'));
         this.addListener('yearlyTab', 'click', () => this.switchView('yearly'));
@@ -297,11 +307,20 @@ class FirebaseDailyTracker {
     }
     
     addListener(id, evt, handler) {
-        document.getElementById(id)?.addEventListener(evt, (e) => { e.preventDefault(); e.stopPropagation(); handler(e); });
+        const el = document.getElementById(id);
+        if (el) {
+            // To prevent multiple listeners, we can replace the element with a clone
+            const newEl = el.cloneNode(true);
+            el.parentNode.replaceChild(newEl, el);
+            newEl.addEventListener(evt, (e) => { e.preventDefault(); e.stopPropagation(); handler(e); });
+        }
     }
     
     addEnterListener(id, handler) {
-        document.getElementById(id)?.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); handler(); } });
+        const el = document.getElementById(id);
+        if(el) {
+            el.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); handler(); } });
+        }
     }
     
     setupModalCloseHandlers() {
@@ -330,7 +349,7 @@ class FirebaseDailyTracker {
         const quoteKey = `dailyQuoteDate_${this.userId}`;
         const indexKey = `dailyQuoteIndex_${this.userId}`;
         let quoteIndex;
-        if (localStorage.getItem(quoteKey) === today) {
+        if (localStorage.getItem(quoteKey) === today && localStorage.getItem(indexKey)) {
             quoteIndex = parseInt(localStorage.getItem(indexKey));
         } else {
             quoteIndex = this.hashCode(this.formatDate(new Date()) + this.userId) % this.motivationalQuotes.length;
@@ -392,7 +411,7 @@ class FirebaseDailyTracker {
         this.highlightToday();
     }
     
-    // ... Other calendar rendering, stats, and navigation methods (unchanged) ...
+    // ... Other calendar rendering, stats, and navigation methods (unchanged from v6.2) ...
     getWeekNumber(date) { const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())); const dayNum = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - dayNum); const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); return Math.ceil((((d - yearStart) / 86400000) + 1) / 7); }
     updateWeekStats() { document.getElementById('weekScore').textContent = `Score: ${this.calculateWeekScore()}%`; document.getElementById('weekStreak').textContent = `🔥 Streak: ${this.calculateCurrentStreak()} days`; }
     calculateWeekScore() { let total = 0, completed = 0; for (let i = 0; i < 7; i++) { const date = new Date(this.currentWeekStart); date.setDate(date.getDate() + i); if (date > new Date()) continue; total++; const entry = this.entries[this.formatDate(date)]; if (entry && entry.habits) { const habitCount = Object.keys(entry.habits).length; const completedCount = Object.values(entry.habits).filter(Boolean).length; if (habitCount > 0 && completedCount / habitCount >= 0.6) completed++; } } return total > 0 ? Math.round((completed / total) * 100) : 0; }
@@ -412,16 +431,16 @@ class FirebaseDailyTracker {
     
     // ... Goal management methods (unchanged) ...
     setupGoalsSelectors() { this.setupWeekSelector(); this.setupMonthSelector(); this.setupYearSelector(); }
-    setupWeekSelector() { const sel = document.getElementById('weekGoalSelector'); sel.innerHTML = ''; for (let i = -4; i <= 4; i++) { const d = new Date(this.currentWeekStart); d.setDate(d.getDate() + i * 7); const weekNum = this.getWeekNumber(d); const key = `${d.getFullYear()}-W${weekNum.toString().padStart(2, '0')}`; const opt = document.createElement('option'); opt.value = key; opt.textContent = `Week ${weekNum}`; if (i === 0) opt.selected = true; sel.appendChild(opt); } sel.onchange = () => this.loadWeeklyGoals(); }
-    setupMonthSelector() { const sel = document.getElementById('monthGoalSelector'); sel.innerHTML = ''; for (let i = -6; i <= 6; i++) { const d = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() + i, 1); const opt = document.createElement('option'); opt.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; opt.textContent = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }); if (i === 0) opt.selected = true; sel.appendChild(opt); } sel.onchange = () => this.loadMonthlyGoals(); }
-    setupYearSelector() { const sel = document.getElementById('yearGoalSelector'); sel.innerHTML = ''; const year = this.currentDate.getFullYear(); for (let y = year - 2; y <= year + 5; y++) { const opt = document.createElement('option'); opt.value = y.toString(); opt.textContent = y.toString(); if (y === year) opt.selected = true; sel.appendChild(opt); } sel.onchange = () => this.loadYearlyGoals(); }
+    setupWeekSelector() { const sel = document.getElementById('weekGoalSelector'); if (!sel) return; sel.innerHTML = ''; for (let i = -4; i <= 4; i++) { const d = new Date(this.currentWeekStart); d.setDate(d.getDate() + i * 7); const weekNum = this.getWeekNumber(d); const key = `${d.getFullYear()}-W${weekNum.toString().padStart(2, '0')}`; const opt = document.createElement('option'); opt.value = key; opt.textContent = `Week ${weekNum}`; if (i === 0) opt.selected = true; sel.appendChild(opt); } sel.onchange = () => this.loadWeeklyGoals(); }
+    setupMonthSelector() { const sel = document.getElementById('monthGoalSelector'); if (!sel) return; sel.innerHTML = ''; for (let i = -6; i <= 6; i++) { const d = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() + i, 1); const opt = document.createElement('option'); opt.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; opt.textContent = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }); if (i === 0) opt.selected = true; sel.appendChild(opt); } sel.onchange = () => this.loadMonthlyGoals(); }
+    setupYearSelector() { const sel = document.getElementById('yearGoalSelector'); if (!sel) return; sel.innerHTML = ''; const year = this.currentDate.getFullYear(); for (let y = year - 2; y <= year + 5; y++) { const opt = document.createElement('option'); opt.value = y.toString(); opt.textContent = y.toString(); if (y === year) opt.selected = true; sel.appendChild(opt); } sel.onchange = () => this.loadYearlyGoals(); }
     renderGoals() { this.loadWeeklyGoals(); this.loadMonthlyGoals(); this.loadYearlyGoals(); }
     loadWeeklyGoals() { const sel = document.getElementById('weekGoalSelector'); const key = sel.value; const goals = this.goals.weekly[key] || { tasks: [] }; this.renderTasksList(document.getElementById('weeklyTasksList'), goals.tasks, 'weekly', key); }
     loadMonthlyGoals() { const sel = document.getElementById('monthGoalSelector'); const key = sel.value; const goals = this.goals.monthly[key] || { tasks: [] }; this.renderTasksList(document.getElementById('monthlyTasksList'), goals.tasks, 'monthly', key); }
     loadYearlyGoals() { const sel = document.getElementById('yearGoalSelector'); const key = sel.value; const goals = this.goals.yearly[key] || { tasks: [] }; this.renderTasksList(document.getElementById('yearlyTasksList'), goals.tasks, 'yearly', key); }
-    renderTasksList(container, tasks, period, key) { container.innerHTML = ''; if (tasks.length === 0) { container.innerHTML = `<div class="empty-state"><p>No goals set for this period yet. 🎯</p></div>`; return; } const completed = tasks.filter(t => t.completed).length; const progress = Math.round((completed / tasks.length) * 100); container.innerHTML = `<div class="progress-bar"><div class="progress-header"><span>Progress: ${completed}/${tasks.length}</span><span>${progress}%</span></div><div class="progress-track"><div class="progress-fill" style="width: ${progress}%"></div></div></div>`; tasks.forEach(task => container.appendChild(this.createTaskElement(task, period, key))); }
+    renderTasksList(container, tasks, period, key) { if (!container) return; container.innerHTML = ''; if (tasks.length === 0) { container.innerHTML = `<div class="empty-state"><p>No goals set for this period yet. 🎯</p></div>`; return; } const completed = tasks.filter(t => t.completed).length; const progress = Math.round((completed / tasks.length) * 100); container.innerHTML = `<div class="progress-bar"><div class="progress-header"><span>Progress: ${completed}/${tasks.length}</span><span>${progress}%</span></div><div class="progress-track"><div class="progress-fill" style="width: ${progress}%"></div></div></div>`; tasks.forEach(task => container.appendChild(this.createTaskElement(task, period, key))); }
     createTaskElement(task, period, key) { const item = document.createElement('div'); item.className = `task-item ${task.completed ? 'completed' : ''}`; item.innerHTML = `<input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}><span class="task-text">${task.text}</span><button class="task-remove">×</button>`; item.querySelector('.task-checkbox').onchange = () => this.toggleTask(task.id, period, key); item.querySelector('.task-remove').onclick = () => this.removeTask(task.id, period, key); return item; }
-    addGoalTask(period) { const input = document.getElementById(`new${period.charAt(0).toUpperCase() + period.slice(1)}Task`); const text = input.value.trim(); if (!text) { this.showToast('Please enter a goal', 'warning'); return; } const key = document.getElementById(`${period === 'weekly' ? 'week' : period}GoalSelector`).value; if (!this.goals[period]) this.goals[period] = {}; if (!this.goals[period][key]) this.goals[period][key] = { tasks: [] }; this.goals[period][key].tasks.push({ id: Date.now().toString(), text, completed: false }); input.value = ''; this.saveUserDataToFirestore(); this.renderGoals(); this.showToast('Goal added! 🎯', 'success'); }
+    addGoalTask(period) { const input = document.getElementById(`new${period.charAt(0).toUpperCase() + period.slice(1)}Task`); if(!input) return; const text = input.value.trim(); if (!text) { this.showToast('Please enter a goal', 'warning'); return; } const key = document.getElementById(`${period === 'weekly' ? 'week' : period}GoalSelector`).value; if (!this.goals[period]) this.goals[period] = {}; if (!this.goals[period][key]) this.goals[period][key] = { tasks: [] }; this.goals[period][key].tasks.push({ id: Date.now().toString(), text, completed: false }); input.value = ''; this.saveUserDataToFirestore(); this.renderGoals(); this.showToast('Goal added! 🎯', 'success'); }
     toggleTask(id, period, key) { const task = this.goals[period]?.[key]?.tasks.find(t => t.id === id); if (task) { task.completed = !task.completed; this.saveUserDataToFirestore(); this.renderGoals(); if (task.completed) this.showToast('Goal completed! 🎉', 'success'); } }
     removeTask(id, period, key) { const goalPeriod = this.goals[period]?.[key]; if (goalPeriod) { goalPeriod.tasks = goalPeriod.tasks.filter(t => t.id !== id); this.saveUserDataToFirestore(); this.renderGoals(); this.showToast('Goal removed', 'warning'); } }
     
@@ -469,6 +488,8 @@ class FirebaseDailyTracker {
             if (this.selectedDate) this.renderHabits(this.entries[this.formatDate(this.selectedDate)]?.habits || {});
             this.renderHabitLegend();
             this.showToast('Habit added! ✅', 'success');
+        } else if (this.getAllHabits().includes(habitName)) {
+            this.showToast('Habit already exists.', 'warning');
         }
     }
     
@@ -548,6 +569,7 @@ class FirebaseDailyTracker {
     // Renders the legend with streaks and full controls
     renderHabitLegend() {
         const list = document.getElementById('habitColors');
+        if (!list) return;
         list.innerHTML = '';
         this.getAllHabits().forEach(habit => {
             const item = document.createElement('div');
@@ -635,7 +657,7 @@ class FirebaseDailyTracker {
     jumpToDate(date) { this.currentDate = date; this.currentWeekStart = this.getWeekStart(date); this.currentMonth = new Date(date.getFullYear(), date.getMonth(), 1); this.currentYear = date.getFullYear(); this.switchView(this.currentView === 'monthly' ? 'monthly' : this.currentView === 'yearly' ? 'yearly' : 'weekly'); this.showToast(`Jumped to ${this.formatDateDisplay(date)} 🚀`, 'success'); }
     handleSyncButton() { this.saveUserDataToFirestore(); this.showToast('Syncing data...', 'success'); }
     updateSyncStatus(status) { const el = document.getElementById('syncStatus'); if (!el) return; el.classList.remove('online', 'syncing', 'error'); const text = el.querySelector('.status-text'); if (status === 'syncing') { text.textContent = 'Syncing...'; el.classList.add('syncing'); } else if (status === 'synced') { text.textContent = 'Synced'; el.classList.add('online'); } else if (status === 'error') { text.textContent = 'Sync Error'; el.classList.add('error'); } else if (status === 'firebase') { text.textContent = 'Firebase Connected'; el.classList.add('online'); } }
-    exportData(format = 'json') { const data = { entries: this.entries, habits: this.habits, habitColors: this.habitColors, goals: this.goals, exportDate: new Date().toISOString(), version: "6.2.0", userName: this.userName, userEmail: this.userEmail }; const timestamp = new Date().toISOString().split('T')[0]; if (format === 'json') this.downloadFile(JSON.stringify(data, null, 2), `${this.userName.toLowerCase()}-tracker-${timestamp}.json`, 'application/json'); this.showToast(`Data exported as ${format.toUpperCase()}!`, 'success'); }
+    exportData(format = 'json') { const data = { entries: this.entries, habits: this.habits, habitColors: this.habitColors, goals: this.goals, exportDate: new Date().toISOString(), version: "6.3.0", userName: this.userName, userEmail: this.userEmail }; const timestamp = new Date().toISOString().split('T')[0]; if (format === 'json') this.downloadFile(JSON.stringify(data, null, 2), `${this.userName.toLowerCase()}-tracker-${timestamp}.json`, 'application/json'); this.showToast(`Data exported as ${format.toUpperCase()}!`, 'success'); }
     downloadFile(content, filename, type) { const blob = new Blob([content], { type }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
     formatDate(date) { return date.toISOString().split('T')[0]; }
     formatDateDisplay(date) { return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); }
