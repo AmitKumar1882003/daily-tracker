@@ -1,14 +1,14 @@
-
 // FIREBASE-INTEGRATED Daily Activity Tracker - FINAL HOST-READY VERSION
-// Version 13.1 - Stability, Performance & Code Quality Update
+// Version 17.0 - PWA & Habit Editor Modal
 
 // Immediately apply theme from localStorage to prevent Flash of Unstyled Content (FOUC)
 (function() {
     const theme = localStorage.getItem('dailyTrackerTheme') || 'light';
     document.documentElement.setAttribute('data-color-scheme', theme);
+    // Note: Palette is applied after the main app object is instantiated.
 })();
 
-console.log('🚀 Firebase Daily Tracker Loading - v13.1 (Host Ready)');
+console.log('🚀 Firebase Daily Tracker Loading - v17.0 (PWA & Habit Editor Modal)');
 
 // --- FIREBASE CONFIGURATION ---
 const firebaseConfig = {
@@ -46,14 +46,10 @@ class FirebaseDailyTracker {
         this.habitColors = {};
         this.goals = { weekly: {}, monthly: {}, yearly: {} };
         this.achievements = {};
-        this.theme = localStorage.getItem('dailyTrackerTheme') || 'light';
+        this.changeLog = [];
         
         // Config
-        this.availableColors = [
-            "#3B82F6", "#10B981", "#EF4444", "#8B5CF6", "#06B6D4",
-            "#F59E0B", "#EC4899", "#6366F1", "#14B8A6", "#F97316",
-            "#84CC16", "#A855F7", "#E11D48", "#0EA5E9", "#65A30D"
-        ];
+        this.setupPalettes();
         this.motivationalQuotes = [
             "The difference between a successful person and others is not a lack of strength, not a lack of knowledge, but rather a lack of will. Your PG seat is waiting for your will to claim it.",
             "Every late night study session, every skipped outing, is a deposit into your future as a healer. Keep investing.",
@@ -114,6 +110,8 @@ class FirebaseDailyTracker {
         // Internal state
         this.autoSaveTimer = null;
         this.firebaseSyncTimer = null;
+        this.currentTheme = 'light';
+        this.currentPalette = 'default-teal';
         this.habitChartInstance = null;
         
         // Performance: Cache DOM elements
@@ -149,11 +147,11 @@ class FirebaseDailyTracker {
 
     initializeAppUI() {
         this.cacheDOMElements();
+        this.initializeTheme(); // Apply themes and palettes first
         this.updateUserHeader();
         this.displayMotivationalQuote();
         this.setupAppEventListeners();
         this.setupKeyboardShortcuts();
-        this.initializeTheme();
         this.switchView('weekly'); // Start on weekly view
         this.setupGoalsSelectors();
         this.checkAchievements(true); // Initial check on load
@@ -166,11 +164,11 @@ class FirebaseDailyTracker {
         this.userId = user.uid;
         this.userName = user.displayName || user.email.split('@')[0] || 'User';
         
-        this.loadUserDataFromFirestore().then(() => {
+        this.downloadDataFromFirestore(true).then(() => {
             this.initializeAppUI();
             this.showMainApp();
             this.startFirebaseSync();
-            this.showToast(`Welcome back, ${this.userName}! 🎉`, 'success');
+            this.showToast(`Welcome back, ${this.userName}! Synced from cloud.`, 'success');
         });
     }
     
@@ -182,6 +180,7 @@ class FirebaseDailyTracker {
         this.habits = [];
         this.goals = { weekly: {}, monthly: {}, yearly: {} };
         this.achievements = {};
+        this.changeLog = [];
         if (this.firebaseSyncTimer) {
             clearInterval(this.firebaseSyncTimer);
         }
@@ -204,7 +203,7 @@ class FirebaseDailyTracker {
             if (error.code === 'auth/user-not-found') {
                 try {
                     await auth.createUserWithEmailAndPassword(email, password);
-                    this.showToast('Account created successfully! 🎉', 'success');
+                    this.showToast('Account created successfully!', 'success');
                 } catch (createError) {
                     this.showToast(`Error creating account: ${createError.message}`, 'error');
                 }
@@ -228,91 +227,94 @@ class FirebaseDailyTracker {
 
     // --- DATA SYNC (FIRESTORE) ---
 
-    async loadUserDataFromFirestore() {
+    async confirmAndDownloadData() {
+        if (confirm('Are you sure you want to download from the cloud? This will overwrite any unsaved local changes.')) {
+            await this.downloadDataFromFirestore();
+        }
+    }
+
+    async downloadDataFromFirestore(isInitial = false) {
         if (!this.userId) return;
+        this.updateSyncStatus('syncing');
         try {
             const userDoc = await db.collection('users').doc(this.userId).get();
             if (userDoc.exists) {
                 const data = userDoc.data();
                 this.userName = data.userName || this.userName;
-                // Load theme from Firestore and sync it
-                if (data.theme) {
-                    this.theme = data.theme;
-                    localStorage.setItem('dailyTrackerTheme', this.theme);
-                    document.documentElement.setAttribute('data-color-scheme', this.theme);
-                }
                 this.entries = data.entries || {};
-                this.habits = data.habits || this.getDefaultHabits();
-                this.habitColors = { ...this.getDefaultHabitColors(), ...(data.habitColors || {}) };
+                this.habits = data.habits || [];
+                this.habitColors = data.habitColors || {};
                 this.goals = data.goals || { weekly: {}, monthly: {}, yearly: {} };
                 this.achievements = data.achievements || {};
+                this.changeLog = data.changeLog || [];
+                
+                if (!isInitial) {
+                    this.logChange('📥', 'Downloaded latest data from cloud.');
+                    this.showToast('Data downloaded from cloud.', 'success');
+                    this.initializeAppUI(); // Full re-render after manual download
+                }
             } else {
+                // This is a new user, initialize defaults and do an initial upload
                 this.initializeDefaultData();
-                await this.saveUserDataToFirestore({ isInitial: true }); // Initial save for new user
+                await this.uploadDataToFirestore(true); 
             }
+             this.updateSyncStatus('synced');
         } catch (error) {
             console.error("Error loading user data:", error);
-            this.showToast('Error loading your data, using local defaults.', 'error');
-            this.initializeDefaultData();
+            this.updateSyncStatus('error');
+            this.showToast('Error downloading data from cloud.', 'error');
+            if (isInitial) {
+                // If initial load fails, use local defaults to not block the user
+                this.initializeDefaultData();
+            }
         }
     }
     
-    async saveUserDataToFirestore(options = {}) {
-        const { isInitial = false, silent = false } = options;
+    async uploadDataToFirestore(isSilent = false) {
         if (!this.userId) return;
-        
-        if (!silent) this.updateSyncStatus('syncing');
-        
+        this.updateSyncStatus('syncing');
         try {
             const userData = {
                 userName: this.userName,
-                theme: this.theme,
                 entries: this.entries,
                 habits: this.habits,
                 habitColors: this.habitColors,
                 goals: this.goals,
                 achievements: this.achievements,
+                changeLog: this.changeLog,
                 lastUpdated: new Date().toISOString(),
-                version: "13.1.0"
+                version: "17.0.0"
             };
             await db.collection('users').doc(this.userId).set(userData, { merge: true });
-            
-            if (!isInitial && !silent) {
-                this.showToast('Data synced to cloud!', 'success');
+            if (!isSilent) {
+                this.logChange('☁️', 'Data uploaded to the cloud.');
+                this.showToast('Data uploaded to cloud!', 'success');
             }
-            if (!silent) {
-                this.updateSyncStatus('synced');
-            }
+            this.updateSyncStatus('synced');
         } catch (error) {
             console.error("Error saving user data:", error);
-            if (!silent) {
-                this.updateSyncStatus('error');
-                this.showToast('Error syncing data to cloud', 'error');
-            }
+            this.updateSyncStatus('error');
+            this.showToast('Error uploading data to cloud', 'error');
         }
     }
     
     startFirebaseSync() {
         if (this.firebaseSyncTimer) clearInterval(this.firebaseSyncTimer);
+        // Automatic upload every 3 minutes
         this.firebaseSyncTimer = setInterval(() => {
-            if (this.userId) this.saveUserDataToFirestore();
-        }, 60000); // Sync every 60 seconds
+            if (this.userId) this.uploadDataToFirestore(true); // Run silently in the background
+        }, 180000); 
     }
 
     // --- DEFAULT DATA & UI STATE ---
     
     initializeDefaultData() {
-        this.habits = this.getDefaultHabits();
-        this.habitColors = this.getDefaultHabitColors();
-        this.entries = {
-            [this.formatDate(new Date())]: { "text": "Welcome to your Daily Tracker! Edit this entry to get started.", "habits": { "Planning": true, "Study/Learning": true } }
-        };
+        this.habits = [];
+        this.habitColors = {};
+        this.entries = {};
         this.goals = { weekly: {}, monthly: {}, yearly: {} };
         this.achievements = {};
-    }
-
-    getDefaultHabits() {
-        return ["Study/Learning", "Exercise", "Reading", "Planning", "Review Sessions", "Project Work", "Skill Development", "Health Care"];
+        this.changeLog = [{ icon: '🎉', description: 'Account created!', timestamp: new Date().toISOString() }];
     }
 
     getDefaultHabitColors() {
@@ -335,14 +337,43 @@ class FirebaseDailyTracker {
     
     updateUserHeader() {
         if (this.elements.headerTitle) {
-            this.elements.headerTitle.textContent = `Hi ${this.userName}! 🩺`;
+            this.elements.headerTitle.textContent = `Hi, ${this.userName}.`;
         }
     }
 
-    displayMotivationalQuote() {
-        const quoteIndex = Math.floor(Math.random() * this.motivationalQuotes.length);
-        this.elements.dailyQuote.textContent = `"${this.motivationalQuotes[quoteIndex]}"`;
-        this.elements.quoteAuthor.textContent = '— Daily Motivation';
+    async fetchMotivationalQuote() {
+        try {
+            const response = await fetch('https://type.fit/api/quotes');
+            if (!response.ok) throw new Error('Network response was not ok');
+            const quotes = await response.json();
+            const quote = quotes[Math.floor(Math.random() * quotes.length)];
+            let author = quote.author || 'Unknown';
+            if (author === 'type.fit') author = 'Unknown';
+            return { text: `"${quote.text}"`, author: `— ${author}` };
+        } catch (error) {
+            console.error('Failed to fetch motivational quote:', error);
+            return null; // Return null to indicate failure
+        }
+    }
+
+    async displayMotivationalQuote() {
+        const quoteContainer = this.elements.motivationalQuote;
+        quoteContainer.classList.add('loading');
+
+        try {
+            const quote = await this.fetchMotivationalQuote();
+            if (quote) {
+                this.elements.dailyQuote.textContent = quote.text;
+                this.elements.quoteAuthor.textContent = quote.author;
+            } else {
+                // Fallback to internal quotes
+                const fallbackQuoteIndex = Math.floor(Math.random() * this.motivationalQuotes.length);
+                this.elements.dailyQuote.textContent = `"${this.motivationalQuotes[fallbackQuoteIndex]}"`;
+                this.elements.quoteAuthor.textContent = '— Daily Motivation';
+            }
+        } finally {
+            quoteContainer.classList.remove('loading');
+        }
     }
 
     // --- EVENT LISTENERS & SETUP ---
@@ -350,12 +381,12 @@ class FirebaseDailyTracker {
     cacheDOMElements() {
         const ids = [
             'loginOverlay', 'mainApp', 'loginBtn', 'loginEmail', 'loginPassword', 'headerTitle', 
-            'dailyQuote', 'quoteAuthor', 'syncStatus', 'signOutBtn', 'dashboardTab', 'weeklyTab', 
+            'motivationalQuote', 'dailyQuote', 'quoteAuthor', 'quoteLoader', 'syncStatus', 'signOutBtn', 'dashboardTab', 'weeklyTab', 
             'monthlyTab', 'yearlyTab', 'goalsTab', 'achievementsTab', 'prevWeek', 'nextWeek', 
             'prevMonth', 'nextMonth', 'prevYear', 'nextYear', 'todayBtn', 'jumpToBtn', 'exportBtn', 
-            'importBtn', 'importFileInput', 'settingsToggleBtn', 'settingsBtn', 'themeToggleBtn', 'actionsToggleBtn', 'syncBtn', 
-            'dailyModal', 'entryViewModal', 'jumpToModal', 'settingsModal', 'toast', 'toastMessage',
-            'closeModal', 'closeEntryView', 'closeJumpToModal', 'closeSettingsModal', 'saveEntry', 
+            'importBtn', 'importFileInput', 'settingsToggleBtn', 'settingsBtn', 'themeToggleBtn', 'actionsToggleBtn', 'uploadBtn', 'downloadBtn', 'syncHistoryBtn',
+            'dailyModal', 'entryViewModal', 'jumpToModal', 'settingsModal', 'syncHistoryModal', 'habitEditModal', 'toast', 'toastMessage',
+            'closeModal', 'closeEntryView', 'closeJumpToModal', 'closeSettingsModal', 'closeSyncHistoryModal', 'closeHabitEditModal', 'saveEntry', 
             'quickSave', 'saveSettingsBtn', 'executeJump', 'jumpToday', 'jumpYesterday', 
             'jumpWeekStart', 'jumpMonthStart', 'addWeeklyTask', 'addMonthlyTask', 'addYearlyTask', 
             'addHabit', 'newHabit', 'newWeeklyTask', 'newMonthlyTask', 'newYearlyTask', 'dailyText', 
@@ -364,10 +395,11 @@ class FirebaseDailyTracker {
             'weekGoalSelector', 'monthGoalSelector', 'yearGoalSelector', 'weeklyTasksList', 
             'monthlyTasksList', 'yearlyTasksList', 'achievementsGrid', 'modalDate', 'wordCount', 
             'entryStreak', 'habitsList', 'jumpDate', 'entryViewDate', 'entryViewContent', 
-            'userNameInput', 'weekScore', 'weekStreak', 'monthEntries', 'monthStreak', 'yearEntries',
+            'userNameInput', 'paletteSelector', 'syncHistoryList', 'weekScore', 'weekStreak', 'monthEntries', 'monthStreak', 'yearEntries',
             'yearBestStreak', 'yearGoals', 'dashboardView', 'weeklyView', 'monthlyView', 'yearlyView', 
             'goalsView', 'achievementsView', 'heatmapYearSelector', 'heatmapContainer', 'habitChart', 
-            'streakHistoryContainer'
+            'streakHistoryContainer', 'originalHabitName', 'habitEditName', 'habitEditColorSwatches',
+            'habitEditColorPicker', 'deleteHabitBtn', 'saveHabitChangesBtn'
         ];
         ids.forEach(id => { this.elements[id] = document.getElementById(id); });
         this.elements.headerTitle = document.querySelector('.app-header h1');
@@ -394,16 +426,23 @@ class FirebaseDailyTracker {
             'todayBtn': this.goToToday, 'jumpToBtn': this.openJumpToModal, 
             'exportBtn': () => this.exportData('json'), 'importBtn': () => this.elements.importFileInput.click(),
             'settingsBtn': this.openSettingsModal,
+            'syncHistoryBtn': this.openSyncHistoryModal,
             'themeToggleBtn': this.toggleTheme,
-            'syncBtn': () => this.saveUserDataToFirestore(), 'closeModal': () => this.closeModal('dailyModal'),
+            'uploadBtn': () => this.uploadDataToFirestore(),
+            'downloadBtn': this.confirmAndDownloadData,
+            'closeModal': () => this.closeModal('dailyModal'),
             'closeEntryView': () => this.closeModal('entryViewModal'), 'closeJumpToModal': () => this.closeModal('jumpToModal'),
-            'closeSettingsModal': () => this.closeModal('settingsModal'), 'saveEntry': this.saveEntry,
+            'closeSettingsModal': () => this.closeModal('settingsModal'), 'closeSyncHistoryModal': () => this.closeModal('syncHistoryModal'),
+            'closeHabitEditModal': () => this.closeModal('habitEditModal'),
+            'saveEntry': this.saveEntry,
             'quickSave': this.quickSave, 'saveSettingsBtn': this.saveSettings,
             'executeJump': this.executeJump, 'jumpToday': this.jumpToToday,
             'jumpYesterday': this.jumpToYesterday, 'jumpWeekStart': this.jumpToWeekStart,
             'jumpMonthStart': this.jumpToMonthStart, 'addWeeklyTask': () => this.addGoalTask('weekly'),
             'addMonthlyTask': () => this.addGoalTask('monthly'), 'addYearlyTask': () => this.addGoalTask('yearly'),
-            'addHabit': this.addHabit
+            'addHabit': this.addHabit,
+            'saveHabitChangesBtn': this.saveHabitChanges,
+            'deleteHabitBtn': this.deleteHabit
         };
 
         for (const [id, handler] of Object.entries(listeners)) {
@@ -424,6 +463,7 @@ class FirebaseDailyTracker {
         });
         this.setupModalCloseHandlers();
         this.setupDropdowns();
+        this.setupDragAndDropHabits();
     }
     
     setupKeyboardShortcuts() {
@@ -440,7 +480,7 @@ class FirebaseDailyTracker {
             if (e.key === 'ArrowRight') viewNavMap[this.currentView]?.call(this, 1);
             if (e.key === 'Enter' && !isModalOpen) this.openTodayEntry();
             if (e.key.toLowerCase() === 'g') this.switchView('goals');
-            if (e.key.toLowerCase() === 's') { e.preventDefault(); this.saveUserDataToFirestore(); }
+            if (e.key.toLowerCase() === 's' && e.ctrlKey) { e.preventDefault(); this.uploadDataToFirestore(); }
         });
     }
 
@@ -521,7 +561,7 @@ class FirebaseDailyTracker {
         this.elements.weekStreak.textContent = `🔥 Current Streak: ${this.calculateCurrentEntryStreak()} days`;
     }
 
-    createWeeklyDayElement(date) { const dateString = this.formatDate(date); const dayEl = document.createElement('div'); dayEl.className = 'calendar-day'; dayEl.dataset.date = dateString; if (date.toDateString() === new Date().toDateString()) dayEl.classList.add('today'); const dayNum = document.createElement('div'); dayNum.className = 'day-number'; dayNum.textContent = date.getDate(); dayEl.appendChild(dayNum); const entry = this.entries[dateString]; if (entry) { if(entry.text) { const preview = document.createElement('div'); preview.className = 'day-preview'; preview.textContent = entry.text; preview.onclick = (e) => { e.stopPropagation(); this.openEntryView(date); }; dayEl.appendChild(preview); } const completed = Object.keys(entry.habits || {}).filter(h => entry.habits[h]); if (completed.length > 0) { const indicator = document.createElement('div'); indicator.className = 'habits-indicator'; completed.forEach(habit => { const dot = document.createElement('div'); dot.className = 'habit-dot'; dot.style.backgroundColor = this.habitColors[habit] || '#ccc'; dot.title = habit; indicator.appendChild(dot); }); dayEl.appendChild(indicator); } } dayEl.onclick = () => this.openDayEntry(date); return dayEl; }
+    createWeeklyDayElement(date) { const dateString = this.formatDate(date); const dayEl = document.createElement('div'); dayEl.className = 'calendar-day'; dayEl.dataset.date = dateString; if (this.isSameDay(date, new Date())) dayEl.classList.add('today'); const dayNum = document.createElement('div'); dayNum.className = 'day-number'; dayNum.textContent = date.getDate(); dayEl.appendChild(dayNum); const entry = this.entries[dateString]; if (entry) { if(entry.text) { const preview = document.createElement('div'); preview.className = 'day-preview'; preview.textContent = entry.text; preview.onclick = (e) => { e.stopPropagation(); this.openEntryView(date); }; dayEl.appendChild(preview); } const completed = Object.keys(entry.habits || {}).filter(h => entry.habits[h]); if (completed.length > 0) { const indicator = document.createElement('div'); indicator.className = 'habits-indicator'; completed.forEach(habit => { const dot = document.createElement('div'); dot.className = 'habit-dot'; dot.style.backgroundColor = this.habitColors[habit] || '#ccc'; dot.title = habit; indicator.appendChild(dot); }); dayEl.appendChild(indicator); } } dayEl.onclick = () => this.openDayEntry(date); return dayEl; }
     
     // --- MONTHLY VIEW ---
 
@@ -529,7 +569,7 @@ class FirebaseDailyTracker {
     
     updateMonthStats() { const stats = this.calculateMonthlyStats(); this.elements.monthEntries.textContent = `📝 ${stats.totalEntries} entries`; this.elements.monthStreak.textContent = `🔥 Best streak: ${stats.bestStreak} days`; }
 
-    createMonthlyDayElement(date) { const dateString = this.formatDate(date); const dayEl = document.createElement('div'); dayEl.className = 'monthly-day'; dayEl.dataset.date = dateString; if (date.toDateString() === new Date().toDateString()) dayEl.classList.add('today'); const dayNum = document.createElement('div'); dayNum.className = 'day-number'; dayNum.textContent = date.getDate(); dayEl.appendChild(dayNum); const entry = this.entries[dateString]; if (entry) { if (entry.text) { const preview = document.createElement('div'); preview.className = 'monthly-day-preview'; preview.textContent = entry.text; preview.onclick = (e) => { e.stopPropagation(); this.openEntryView(date); }; dayEl.appendChild(preview); } const completed = Object.keys(entry.habits || {}).filter(h => entry.habits[h]); if (completed.length > 0) { const indicator = document.createElement('div'); indicator.className = 'habits-indicator'; completed.slice(0, 4).forEach(habit => { const dot = document.createElement('div'); dot.className = 'habit-dot'; dot.style.backgroundColor = this.habitColors[habit] || '#ccc'; dot.title = habit; indicator.appendChild(dot); }); dayEl.appendChild(indicator); } } dayEl.onclick = () => this.openDayEntry(date); return dayEl; }
+    createMonthlyDayElement(date) { const dateString = this.formatDate(date); const dayEl = document.createElement('div'); dayEl.className = 'monthly-day'; dayEl.dataset.date = dateString; if (this.isSameDay(date, new Date())) dayEl.classList.add('today'); const dayNum = document.createElement('div'); dayNum.className = 'day-number'; dayNum.textContent = date.getDate(); dayEl.appendChild(dayNum); const entry = this.entries[dateString]; if (entry) { if (entry.text) { const preview = document.createElement('div'); preview.className = 'monthly-day-preview'; preview.textContent = entry.text; preview.onclick = (e) => { e.stopPropagation(); this.openEntryView(date); }; dayEl.appendChild(preview); } const completed = Object.keys(entry.habits || {}).filter(h => entry.habits[h]); if (completed.length > 0) { const indicator = document.createElement('div'); indicator.className = 'habits-indicator'; completed.slice(0, 4).forEach(habit => { const dot = document.createElement('div'); dot.className = 'habit-dot'; dot.style.backgroundColor = this.habitColors[habit] || '#ccc'; dot.title = habit; indicator.appendChild(dot); }); dayEl.appendChild(indicator); } } dayEl.onclick = () => this.openDayEntry(date); return dayEl; }
     
     renderMonthlySummary() { const stats = this.calculateMonthlyStats(); this.elements.monthlySummaryContent.innerHTML = `<div class="summary-stat"><span class="summary-label">📝 Total Entries</span><span class="summary-value">${stats.totalEntries}</span></div><div class="summary-stat"><span class="summary-label">🔥 Best Streak</span><span class="summary-value">${stats.bestStreak} days</span></div>`; }
     
@@ -541,7 +581,7 @@ class FirebaseDailyTracker {
     
     createYearlyMonthElement(month) { const monthEl = document.createElement('div'); monthEl.className = 'yearly-month'; const header = document.createElement('div'); header.className = 'yearly-month-header'; header.textContent = new Date(this.currentYear, month).toLocaleDateString('en-US', { month: 'long' }); monthEl.appendChild(header); const grid = document.createElement('div'); grid.className = 'yearly-month-grid'; ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(day => { const h = document.createElement('div'); h.className = 'yearly-day-header'; h.textContent = day; grid.appendChild(h); }); const firstDay = new Date(this.currentYear, month, 1); for (let i = 0; i < firstDay.getDay(); i++) { const empty = document.createElement('div'); empty.className = 'yearly-day other-month'; grid.appendChild(empty); } const daysInMonth = new Date(this.currentYear, month + 1, 0).getDate(); for (let day = 1; day <= daysInMonth; day++) grid.appendChild(this.createYearlyDayElement(new Date(this.currentYear, month, day))); monthEl.appendChild(grid); return monthEl; }
     
-    createYearlyDayElement(date) { const dateString = this.formatDate(date); const dayEl = document.createElement('div'); dayEl.className = 'yearly-day'; dayEl.textContent = date.getDate(); dayEl.dataset.date = dateString; dayEl.title = this.formatDateDisplay(date); if (date.toDateString() === new Date().toDateString()) dayEl.classList.add('today'); const entry = this.entries[dateString]; if (entry) { dayEl.classList.add('has-entry'); const habitCount = Object.keys(entry.habits || {}).length; if (habitCount > 0) { const completion = Object.values(entry.habits).filter(Boolean).length / habitCount; if (completion >= 0.8) dayEl.style.backgroundColor = '#10B981'; else if (completion >= 0.5) dayEl.style.backgroundColor = '#F59E0B'; else dayEl.style.backgroundColor = '#EF4444'; dayEl.style.color = 'white'; } } dayEl.onclick = () => this.openDayEntry(date); return dayEl; }
+    createYearlyDayElement(date) { const dateString = this.formatDate(date); const dayEl = document.createElement('div'); dayEl.className = 'yearly-day'; dayEl.textContent = date.getDate(); dayEl.dataset.date = dateString; dayEl.title = this.formatDateDisplay(date); if (this.isSameDay(date, new Date())) dayEl.classList.add('today'); const entry = this.entries[dateString]; if (entry) { dayEl.classList.add('has-entry'); const habitCount = Object.keys(entry.habits || {}).length; if (habitCount > 0) { const completion = Object.values(entry.habits).filter(Boolean).length / habitCount; if (completion >= 0.8) dayEl.style.backgroundColor = 'var(--color-primary)'; else if (completion >= 0.5) dayEl.style.backgroundColor = 'var(--color-warning)'; else dayEl.style.backgroundColor = 'var(--color-error)'; dayEl.style.color = 'white'; } } dayEl.onclick = () => this.openDayEntry(date); return dayEl; }
     
     renderYearlySummary() { const stats = this.calculateYearlyStats(); const completion = Math.round((stats.completedGoals / Math.max(stats.totalGoals, 1)) * 100); this.elements.yearlySummaryContent.innerHTML = `<div class="summary-stat"><span class="summary-label">📝 Total Entries</span><span class="summary-value">${stats.totalEntries}</span></div><div class="summary-stat"><span class="summary-label">🔥 Best Streak</span><span class="summary-value">${stats.bestStreak} days</span></div><div class="summary-stat"><span class="summary-label">🎯 Goals Completed</span><span class="summary-value">${stats.completedGoals}/${stats.totalGoals}</span></div><div class="summary-stat"><span class="summary-label">📊 Completion Rate</span><span class="summary-value">${completion}%</span></div>`; }
 
@@ -561,11 +601,43 @@ class FirebaseDailyTracker {
     
     createTaskElement(task, period, key) { const item = document.createElement('div'); item.className = `task-item ${task.completed ? 'completed' : ''}`; item.innerHTML = `<input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}><span class="task-text">${task.text}</span><button class="task-remove" aria-label="Remove task">×</button>`; item.querySelector('.task-checkbox').onchange = () => this.toggleTask(task.id, period, key); item.querySelector('.task-remove').onclick = () => this.removeTask(task.id, period, key); return item; }
     
-    addGoalTask(period) { const input = this.elements[`new${period.charAt(0).toUpperCase() + period.slice(1)}Task`]; const text = input.value.trim(); if (!text) { this.showToast('Please enter a goal', 'warning'); return; } const key = this.elements[`${period === 'weekly' ? 'week' : period}GoalSelector`].value; if (!this.goals[period][key]) this.goals[period][key] = { tasks: [] }; this.goals[period][key].tasks.push({ id: Date.now().toString(), text, completed: false }); input.value = ''; this.renderGoals(); this.checkAchievements(); this.saveUserDataToFirestore(); this.showToast('Goal added! 🎯', 'success'); }
+    addGoalTask(period) {
+        const input = this.elements[`new${period.charAt(0).toUpperCase() + period.slice(1)}Task`];
+        const text = input.value.trim();
+        if (!text) { this.showToast('Please enter a goal', 'warning'); return; }
+        const key = this.elements[`${period === 'weekly' ? 'week' : period}GoalSelector`].value;
+        if (!this.goals[period][key]) this.goals[period][key] = { tasks: [] };
+        this.goals[period][key].tasks.push({ id: Date.now().toString(), text, completed: false });
+        input.value = '';
+        this.logChange('🎯', `Added ${period} goal: "${text.substring(0, 30)}${text.length > 30 ? '...' : ''}"`);
+        this.renderGoals();
+        this.checkAchievements();
+        this.uploadDataToFirestore(true);
+        this.showToast('Goal added! 🎯', 'success');
+    }
     
-    toggleTask(id, period, key) { const task = this.goals[period]?.[key]?.tasks.find(t => t.id === id); if (task) { task.completed = !task.completed; this.renderGoals(); this.saveUserDataToFirestore(); if (task.completed) this.showToast('Goal completed! 🎉', 'success'); } }
+    toggleTask(id, period, key) {
+        const task = this.goals[period]?.[key]?.tasks.find(t => t.id === id);
+        if (task) {
+            task.completed = !task.completed;
+            const logText = `${task.completed ? 'Completed' : 'Marked goal incomplete'}: "${task.text.substring(0, 30)}${task.text.length > 30 ? '...' : ''}"`;
+            this.logChange(task.completed ? '✔️' : '🔄', logText);
+            this.renderGoals();
+            this.uploadDataToFirestore(true);
+            if (task.completed) this.showToast('Goal completed! 🎉', 'success');
+        }
+    }
     
-    removeTask(id, period, key) { if (this.goals[period]?.[key]) { this.goals[period][key].tasks = this.goals[period][key].tasks.filter(t => t.id !== id); this.renderGoals(); this.saveUserDataToFirestore(); this.showToast('Goal removed', 'warning'); } }
+    removeTask(id, period, key) {
+        if (this.goals[period]?.[key]) {
+            const taskText = this.goals[period][key].tasks.find(t => t.id === id)?.text || 'a goal';
+            this.goals[period][key].tasks = this.goals[period][key].tasks.filter(t => t.id !== id);
+            this.logChange('❌', `Removed goal: "${taskText.substring(0, 30)}${taskText.length > 30 ? '...' : ''}"`);
+            this.renderGoals();
+            this.uploadDataToFirestore(true);
+            this.showToast('Goal removed', 'warning');
+        }
+    }
 
     // --- MODAL HANDLING & ENTRY MANAGEMENT ---
 
@@ -576,7 +648,8 @@ class FirebaseDailyTracker {
     openEntryView(date) { const entry = this.entries[this.formatDate(date)]; if (!entry) return; this.elements.entryViewDate.textContent = `📖 Entry for ${this.formatDateDisplay(date)}`; const content = this.elements.entryViewContent; content.innerHTML = ''; if (entry.text) content.innerHTML += `<div><h4>📝 Daily Entry</h4><div class="entry-full-text">${entry.text}</div></div>`; if (entry.habits) { let habitsHtml = '<div><h4>✅ Habits</h4><div class="entry-habits-list">'; this.habits.forEach(habit => { const completed = entry.habits[habit]; habitsHtml += `<div class="entry-habit-item"><div class="entry-habit-status ${completed ? 'completed' : 'not-completed'}" style="${completed ? 'background-color:' + (this.habitColors[habit] || '#ccc') : ''}"></div><div class="entry-habit-name">${habit}</div></div>`; }); habitsHtml += '</div></div>'; content.innerHTML += habitsHtml; } this.elements.entryViewModal.classList.remove('hidden'); }
 
     openJumpToModal() { this.elements.jumpDate.value = this.formatDate(new Date()); this.elements.jumpToModal.classList.remove('hidden'); }
-    openSettingsModal() { this.closeAllModals(); this.elements.userNameInput.value = this.userName; this.elements.settingsModal.classList.remove('hidden'); }
+    openSettingsModal() { this.closeAllModals(); this.elements.userNameInput.value = this.userName; this.renderPaletteSelector(); this.elements.settingsModal.classList.remove('hidden'); }
+    openSyncHistoryModal() { this.renderSyncHistory(); this.elements.syncHistoryModal.classList.remove('hidden'); }
 
     closeModal(id) { document.getElementById(id)?.classList.add('hidden'); if (id === 'dailyModal') this.selectedDate = null; }
     closeAllModals() { document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden')); this.selectedDate = null; }
@@ -591,9 +664,9 @@ class FirebaseDailyTracker {
         if (isAutoSave) { this.updateAutoSaveStatus(); }
     }
     
-    quickSave() { this.saveCurrentEntry(); this.checkAchievements(); this.saveUserDataToFirestore(); this.showToast('Entry saved and synced! 💾', 'success'); }
-    saveEntry() { this.saveCurrentEntry(); this.closeModal('dailyModal'); this.checkAchievements(); this.renderCurrentView(); this.saveUserDataToFirestore(); this.showToast('Entry saved successfully! 🎉', 'success'); }
-    saveSettings() { const newName = this.elements.userNameInput.value.trim(); if (newName && newName !== this.userName) { this.userName = newName; this.updateUserHeader(); this.saveUserDataToFirestore(); this.showToast('Settings saved!', 'success'); } this.closeModal('settingsModal'); }
+    quickSave() { this.saveCurrentEntry(); this.logChange('💾', `Quick saved entry for ${this.formatDateDisplay(this.selectedDate)}`); this.checkAchievements(); this.uploadDataToFirestore(); this.showToast('Entry saved and synced! 💾', 'success'); }
+    saveEntry() { this.saveCurrentEntry(); this.closeModal('dailyModal'); this.logChange('📝', `Saved entry for ${this.formatDateDisplay(this.selectedDate)}`); this.checkAchievements(); this.renderCurrentView(); this.uploadDataToFirestore(); this.showToast('Entry saved successfully! 🎉', 'success'); }
+    saveSettings() { const newName = this.elements.userNameInput.value.trim(); if (newName && newName !== this.userName) { this.userName = newName; this.updateUserHeader(); this.logChange('👤', `Display name changed to "${newName}"`); this.uploadDataToFirestore(); this.showToast('Settings saved!', 'success'); } this.closeModal('settingsModal'); }
     
     // --- HABIT MANAGEMENT ---
 
@@ -608,34 +681,27 @@ class FirebaseDailyTracker {
     createHabitElement(habit, index, isCompleted) {
         const habitItem = document.createElement('div');
         habitItem.className = 'habit-item';
+        habitItem.setAttribute('draggable', 'true');
 
-        if (habitItem.dataset.isEditing === 'true') {
-            // Render edit form (this logic is now inside editHabit)
-        } else {
-            const details = document.createElement('div');
-            details.className = 'habit-details';
-            details.innerHTML = `
-                <input type="checkbox" class="habit-checkbox" id="habit-${index}" ${isCompleted ? 'checked' : ''}>
-                <label for="habit-${index}" class="habit-label">${habit}</label>
-            `;
-            details.querySelector('input').addEventListener('change', () => this.scheduleAutoSave());
+        const details = document.createElement('div');
+        details.className = 'habit-details';
+        details.innerHTML = `
+            <input type="checkbox" class="habit-checkbox" id="habit-${index}" ${isCompleted ? 'checked' : ''}>
+            <label for="habit-${index}" class="habit-label">${habit}</label>
+        `;
+        details.querySelector('input').addEventListener('change', () => this.scheduleAutoSave());
 
-            const actions = document.createElement('div');
-            actions.className = 'habit-actions';
-            actions.innerHTML = `
-                <button class="habit-action-btn edit-habit-btn" aria-label="Edit habit">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L18.5 2.5z"></path></svg>
-                </button>
-                <button class="habit-action-btn remove-habit-btn" aria-label="Remove habit">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                </button>
-            `;
-            actions.querySelector('.edit-habit-btn').onclick = () => this.editHabit(habit, habitItem);
-            actions.querySelector('.remove-habit-btn').onclick = () => this.removeHabit(habit);
-            
-            habitItem.appendChild(details);
-            habitItem.appendChild(actions);
-        }
+        const actions = document.createElement('div');
+        actions.className = 'habit-actions';
+        actions.innerHTML = `
+            <button class="habit-action-btn edit-habit-btn" aria-label="Edit habit">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L18.5 2.5z"></path></svg>
+            </button>
+        `;
+        actions.querySelector('.edit-habit-btn').onclick = () => this.openHabitEditor(habit);
+        
+        habitItem.appendChild(details);
+        habitItem.appendChild(actions);
         return habitItem;
     }
 
@@ -649,102 +715,184 @@ class FirebaseDailyTracker {
                 this.habitColors[habitName] = available.length > 0 ? available[0] : this.availableColors[Math.floor(Math.random() * this.availableColors.length)];
             }
             newHabitInput.value = '';
+            this.logChange('➕', `Added habit: "${habitName}"`);
             this.renderHabits(this.getCurrentCompletedHabits());
             this.renderHabitLegend();
-            this.saveUserDataToFirestore();
+            this.uploadDataToFirestore(true);
             this.showToast('Habit added!', 'success');
         } else if (this.habits.includes(habitName)) {
             this.showToast('Habit already exists', 'warning');
         }
     }
     
-    editHabit(oldName, habitItemElement) {
-        habitItemElement.dataset.isEditing = 'true';
-        const originalCompleted = this.getCurrentCompletedHabits()[oldName] || false;
-        habitItemElement.innerHTML = `
-            <div class="habit-edit-form">
-                <div class="habit-edit-controls">
-                    <input type="text" class="form-control form-control--sm habit-edit-input" value="${oldName}">
-                    <button class="btn btn--primary btn--sm save-edit-btn">Save</button>
-                    <button class="btn btn--outline btn--sm cancel-edit-btn">Cancel</button>
-                </div>
-                <div class="habit-edit-colors">
-                    ${this.availableColors.map(color => `
-                        <div class="habit-edit-swatch ${this.habitColors[oldName] === color ? 'selected' : ''}" 
-                             style="background-color: ${color};" data-color="${color}"></div>
-                    `).join('')}
-                </div>
-            </div>`;
+    openHabitEditor(habitName) {
+        this.elements.originalHabitName.value = habitName;
+        this.elements.habitEditName.value = habitName;
+        const currentColor = this.habitColors[habitName] || '#cccccc';
+        this.elements.habitEditColorPicker.value = currentColor;
 
-        const input = habitItemElement.querySelector('.habit-edit-input');
-        const colorSwatches = habitItemElement.querySelectorAll('.habit-edit-swatch');
-        let selectedColor = this.habitColors[oldName];
-
-        colorSwatches.forEach(swatch => {
-            swatch.onclick = () => {
-                colorSwatches.forEach(s => s.classList.remove('selected'));
+        const swatchesContainer = this.elements.habitEditColorSwatches;
+        swatchesContainer.innerHTML = '';
+        this.availableColors.forEach(color => {
+            const swatch = document.createElement('div');
+            swatch.className = 'habit-edit-swatch';
+            swatch.style.backgroundColor = color;
+            swatch.dataset.color = color;
+            if (color === currentColor) {
                 swatch.classList.add('selected');
-                selectedColor = swatch.dataset.color;
+            }
+            swatch.onclick = () => {
+                this.elements.habitEditColorPicker.value = color;
+                swatchesContainer.querySelector('.selected')?.classList.remove('selected');
+                swatch.classList.add('selected');
             };
+            swatchesContainer.appendChild(swatch);
         });
 
-        const cancelEditing = () => {
-            habitItemElement.dataset.isEditing = 'false';
-            this.renderHabits(this.getCurrentCompletedHabits());
-        };
+        this.elements.habitEditColorPicker.oninput = () => {
+             swatchesContainer.querySelector('.selected')?.classList.remove('selected');
+        }
 
-        habitItemElement.querySelector('.save-edit-btn').onclick = () => {
-            const newName = input.value.trim();
-            if (newName && newName !== oldName && this.habits.includes(newName)) {
-                this.showToast('A habit with this name already exists.', 'error');
-                return;
-            }
-            if (!newName) {
-                this.showToast('Habit name cannot be empty.', 'error');
-                return;
-            }
-
-            // Update data structures
-            const index = this.habits.indexOf(oldName);
-            if (index > -1) this.habits[index] = newName;
-            
-            delete this.habitColors[oldName];
-            this.habitColors[newName] = selectedColor;
-
-            Object.values(this.entries).forEach(entry => {
-                if (entry.habits && entry.habits.hasOwnProperty(oldName)) {
-                    entry.habits[newName] = entry.habits[oldName];
-                    delete entry.habits[oldName];
-                }
-            });
-
-            habitItemElement.dataset.isEditing = 'false';
-            this.renderHabits(this.getCurrentCompletedHabits());
-            this.renderHabitLegend();
-            this.renderCurrentView();
-            this.saveUserDataToFirestore();
-            this.showToast('Habit updated!', 'success');
-        };
-        habitItemElement.querySelector('.cancel-edit-btn').onclick = cancelEditing;
+        this.elements.habitEditModal.classList.remove('hidden');
     }
 
-    removeHabit(habitName) {
-        if (confirm(`Are you sure you want to remove the habit "${habitName}"? This will remove it from all past entries.`)) {
+    saveHabitChanges() {
+        const oldName = this.elements.originalHabitName.value;
+        const newName = this.elements.habitEditName.value.trim();
+        const newColor = this.elements.habitEditColorPicker.value;
+
+        if (!newName) {
+            this.showToast('Habit name cannot be empty.', 'error');
+            return;
+        }
+
+        if (newName !== oldName && this.habits.includes(newName)) {
+            this.showToast('A habit with this name already exists.', 'error');
+            return;
+        }
+
+        // Update data structures
+        const index = this.habits.indexOf(oldName);
+        if (index > -1) this.habits[index] = newName;
+        
+        delete this.habitColors[oldName];
+        this.habitColors[newName] = newColor;
+
+        Object.values(this.entries).forEach(entry => {
+            if (entry.habits && entry.habits.hasOwnProperty(oldName)) {
+                entry.habits[newName] = entry.habits[oldName];
+                delete entry.habits[oldName];
+            }
+        });
+
+        this.logChange('✏️', `Updated habit: "${oldName}" to "${newName}"`);
+        this.closeModal('habitEditModal');
+        this.renderHabits(this.getCurrentCompletedHabits());
+        this.renderHabitLegend();
+        this.renderCurrentView();
+        this.uploadDataToFirestore(true);
+        this.showToast('Habit updated!', 'success');
+    }
+    
+    deleteHabit() {
+        const habitName = this.elements.originalHabitName.value;
+        if (confirm(`Are you sure you want to permanently delete the habit "${habitName}"? This will remove it from all past and future entries.`)) {
             this.habits = this.habits.filter(h => h !== habitName);
             delete this.habitColors[habitName];
             Object.values(this.entries).forEach(entry => {
                 if (entry.habits) delete entry.habits[habitName];
             });
+            this.logChange('🗑️', `Deleted habit: "${habitName}"`);
+            this.closeModal('habitEditModal');
             this.renderHabits(this.getCurrentCompletedHabits());
             this.renderHabitLegend();
             this.renderCurrentView();
-            this.saveUserDataToFirestore();
-            this.showToast('Habit removed.', 'warning');
+            this.uploadDataToFirestore(true);
+            this.showToast('Habit deleted.', 'warning');
         }
     }
     
+    setupDragAndDropHabits() {
+        const list = this.elements.habitsList;
+        let draggedHabitName = null;
+
+        list.addEventListener('dragstart', (e) => {
+            const habitItem = e.target.closest('.habit-item');
+            if (habitItem && habitItem.getAttribute('draggable') === 'true') {
+                draggedHabitName = habitItem.querySelector('.habit-label').textContent;
+                setTimeout(() => {
+                    habitItem.classList.add('dragging');
+                }, 0);
+            }
+        });
+
+        list.addEventListener('dragend', (e) => {
+            const habitItem = e.target.closest('.habit-item');
+            if (habitItem) {
+                habitItem.classList.remove('dragging');
+            }
+            draggedHabitName = null;
+        });
+
+        list.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const targetItem = e.target.closest('.habit-item');
+            list.querySelectorAll('.habit-item').forEach(item => {
+                item.classList.remove('drag-over-top', 'drag-over-bottom');
+            });
+            if (targetItem && targetItem.querySelector('.habit-label').textContent !== draggedHabitName) {
+                const rect = targetItem.getBoundingClientRect();
+                const offset = e.clientY - rect.top - (rect.height / 2);
+                if (offset < 0) {
+                    targetItem.classList.add('drag-over-top');
+                } else {
+                    targetItem.classList.add('drag-over-bottom');
+                }
+            }
+        });
+
+        list.addEventListener('dragleave', (e) => {
+            e.target.closest('.habit-item')?.classList.remove('drag-over-top', 'drag-over-bottom');
+        });
+
+        list.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const targetItem = e.target.closest('.habit-item');
+            list.querySelectorAll('.habit-item').forEach(item => {
+                item.classList.remove('drag-over-top', 'drag-over-bottom');
+            });
+            
+            if (!targetItem || !draggedHabitName) return;
+
+            const targetHabitName = targetItem.querySelector('.habit-label').textContent;
+            if (targetHabitName === draggedHabitName) return;
+
+            const oldIndex = this.habits.indexOf(draggedHabitName);
+            let targetIndex = this.habits.indexOf(targetHabitName);
+            
+            if (oldIndex === -1 || targetIndex === -1) return;
+            
+            const [movedHabit] = this.habits.splice(oldIndex, 1);
+            
+            // Recalculate targetIndex after splice
+            targetIndex = this.habits.indexOf(targetHabitName);
+
+            const rect = targetItem.getBoundingClientRect();
+            const offset = e.clientY - rect.top - (rect.height / 2);
+            const insertionIndex = (offset < 0) ? targetIndex : targetIndex + 1;
+            
+            this.habits.splice(insertionIndex, 0, movedHabit);
+            
+            this.logChange('↕️', 'Reordered habits.');
+            this.renderHabits(this.getCurrentCompletedHabits());
+            this.renderHabitLegend();
+            this.uploadDataToFirestore(true);
+        });
+    }
+
     renderHabitLegend() {
         const container = this.elements.habitColors;
+        if (!container) return;
         container.innerHTML = '';
         this.habits.forEach(habit => {
             const item = document.createElement('div');
@@ -799,9 +947,10 @@ class FirebaseDailyTracker {
             
             let level = 0;
             if (entry) {
-                const habitCount = Object.keys(entry.habits || {}).length;
+                const habitCount = this.habits.length;
                 if (habitCount > 0) {
-                    const completion = Object.values(entry.habits).filter(Boolean).length / habitCount;
+                    const completedCount = Object.values(entry.habits || {}).filter(Boolean).length;
+                    const completion = completedCount / habitCount;
                     if (completion >= 0.9) level = 4;
                     else if (completion >= 0.6) level = 3;
                     else if (completion >= 0.3) level = 2;
@@ -812,7 +961,7 @@ class FirebaseDailyTracker {
             }
             
             cell.dataset.level = level;
-            cell.title = `${this.formatDateDisplay(d)}: Level ${level}`;
+            cell.title = `${this.formatDateDisplay(d)}: ${Object.values(entry?.habits || {}).filter(Boolean).length} habits`;
             cell.onclick = () => this.openDayEntry(d);
             gridEl.appendChild(cell);
         }
@@ -949,8 +1098,9 @@ class FirebaseDailyTracker {
         if (!this.achievements[id]) {
             this.achievements[id] = { unlockedAt: new Date().toISOString() };
             const achievement = this.ALL_ACHIEVEMENTS[id];
+            this.logChange('🏆', `Unlocked achievement: ${achievement.title}`);
             this.showToast(`🏆 Achievement Unlocked: ${achievement.title}`, 'success');
-            this.saveUserDataToFirestore();
+            this.uploadDataToFirestore(true);
         }
     }
     
@@ -1014,10 +1164,12 @@ class FirebaseDailyTracker {
         const today = new Date();
         for (let i = 0; i < 365 * 5; i++) { // Check up to 5 years back
             const d = new Date(today);
+            d.setHours(12, 0, 0, 0); // Normalize time
             d.setDate(d.getDate() - i);
             if (this.entries[this.formatDate(d)]) {
                 streak++;
             } else {
+                if (i === 0) continue; // Allow skipping today
                 break;
             }
         }
@@ -1034,8 +1186,9 @@ class FirebaseDailyTracker {
             } else {
                 const prevDate = new Date(dateStrings[i - 1]);
                 const currDate = new Date(dateStrings[i]);
-                prevDate.setDate(prevDate.getDate() + 1);
-                if (prevDate.toDateString() === currDate.toDateString()) {
+                const dayDiff = (currDate.getTime() - prevDate.getTime()) / (1000 * 3600 * 24);
+
+                if (dayDiff === 1) {
                     currentStreak++;
                 } else {
                     bestStreak = Math.max(bestStreak, currentStreak);
@@ -1051,30 +1204,30 @@ class FirebaseDailyTracker {
         if (sortedDates.length === 0) return [];
 
         const streaks = [];
-        let currentStreak = { start: sortedDates[0], end: sortedDates[0], length: 1, isCurrent: false };
-
-        for (let i = 1; i < sortedDates.length; i++) {
-            const prevDate = sortedDates[i - 1];
-            const currDate = sortedDates[i];
-            const expectedNextDate = new Date(prevDate);
-            expectedNextDate.setDate(expectedNextDate.getDate() + 1);
-
-            if (expectedNextDate.toDateString() === currDate.toDateString()) {
-                currentStreak.length++;
-                currentStreak.end = currDate;
-            } else {
-                streaks.push(currentStreak);
-                currentStreak = { start: currDate, end: currDate, length: 1 };
+        if (sortedDates.length > 0) {
+            let currentStreak = { start: sortedDates[0], end: sortedDates[0], length: 1 };
+            for (let i = 1; i < sortedDates.length; i++) {
+                const dayDiff = (sortedDates[i].getTime() - sortedDates[i - 1].getTime()) / (1000 * 3600 * 24);
+                if (dayDiff === 1) {
+                    currentStreak.length++;
+                    currentStreak.end = sortedDates[i];
+                } else {
+                    streaks.push(currentStreak);
+                    currentStreak = { start: sortedDates[i], end: sortedDates[i], length: 1 };
+                }
             }
+            streaks.push(currentStreak);
         }
-        streaks.push(currentStreak);
         
         // Check if the latest streak is current
-        const lastEntryDate = sortedDates[sortedDates.length - 1];
-        const today = new Date();
-        const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-        if (lastEntryDate.toDateString() === today.toDateString() || lastEntryDate.toDateString() === yesterday.toDateString()) {
-             streaks[streaks.length - 1].isCurrent = true;
+        const lastStreak = streaks[streaks.length - 1];
+        if (lastStreak) {
+            const today = new Date();
+            const lastEntryDate = lastStreak.end;
+            const dayDiffFromToday = (today.getTime() - lastEntryDate.getTime()) / (1000 * 3600 * 24);
+            if (dayDiffFromToday < 2) {
+                 lastStreak.isCurrent = true;
+            }
         }
 
         return streaks;
@@ -1085,11 +1238,13 @@ class FirebaseDailyTracker {
         const today = new Date();
         for (let i = 0; i < 365 * 5; i++) {
             const d = new Date(today);
+            d.setHours(12, 0, 0, 0);
             d.setDate(d.getDate() - i);
             const entry = this.entries[this.formatDate(d)];
             if (entry && entry.habits && entry.habits[habitName]) {
                 streak++;
             } else {
+                 if (i === 0 && !entry) continue; // Allow skipping today if no entry
                 break;
             }
         }
@@ -1100,7 +1255,7 @@ class FirebaseDailyTracker {
         const totalEntries = Object.keys(this.entries).length;
         const totalWords = Object.values(this.entries).reduce((sum, entry) => sum + (entry.text?.split(/\s+/).filter(Boolean).length || 0), 0);
         const streaks = this.calculateAllEntryStreaks();
-        const currentStreak = streaks.find(s => s.isCurrent)?.length || 0;
+        const currentStreak = streaks.find(s => s.isCurrent)?.length || this.calculateCurrentEntryStreak();
         const bestStreak = Math.max(...streaks.map(s => s.length), 0);
         const totalGoals = Object.values(this.goals).flatMap(p => Object.values(p)).flatMap(g => g.tasks).length;
 
@@ -1153,16 +1308,21 @@ class FirebaseDailyTracker {
     
     addListener(id, event, handler) {
         const el = document.getElementById(id);
-        if (el) el.addEventListener(event, handler);
+        if (el) el.addEventListener(event, handler.bind(this));
     }
     
     addEnterListener(id, handler) {
         const el = document.getElementById(id);
-        if(el) el.addEventListener('keydown', (e) => { if (e.key === 'Enter') handler(); });
+        if(el) el.addEventListener('keydown', (e) => { if (e.key === 'Enter') handler.call(this); });
     }
 
-    formatDate(date) { return date.toISOString().split('T')[0]; }
+    formatDate(date) { 
+        const d = new Date(date);
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        return d.toISOString().slice(0, 10);
+    }
     formatDateDisplay(date) { return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); }
+    isSameDay(d1, d2) { return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate(); }
     getWeekStart(d) { d = new Date(d); const day = d.getDay(); const diff = d.getDate() - day; return new Date(d.setDate(diff)); }
     getWeekNumber(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7); return weekNo; }
     
@@ -1177,6 +1337,7 @@ class FirebaseDailyTracker {
         this.updateAutoSaveStatus('saving');
         this.autoSaveTimer = setTimeout(() => {
             this.saveCurrentEntry(true);
+            this.uploadDataToFirestore(true); // Auto-save also triggers a silent upload
         }, 1500);
     }
 
@@ -1189,7 +1350,7 @@ class FirebaseDailyTracker {
             } else {
                 autoSaveEl.textContent = 'Auto-saved!';
                 autoSaveEl.style.color = 'var(--color-success)';
-                setTimeout(() => { autoSaveEl.textContent = 'Auto-save enabled'; }, 2000);
+                setTimeout(() => { autoSaveEl.textContent = 'Auto-save enabled'; autoSaveEl.style.color = 'var(--color-text-secondary)';}, 2000);
             }
         }
     }
@@ -1213,7 +1374,7 @@ class FirebaseDailyTracker {
         }
     }
 
-    executeJump() { this.currentDate = new Date(this.elements.jumpDate.value + 'T12:00:00'); this.goToToday(); this.closeModal('jumpToModal'); }
+    executeJump() { this.currentDate = new Date(this.elements.jumpDate.value); this.goToToday(); this.closeModal('jumpToModal'); }
     jumpToToday() { this.currentDate = new Date(); this.goToToday(); this.closeModal('jumpToModal'); }
     jumpToYesterday() { const d = new Date(); d.setDate(d.getDate() - 1); this.currentDate = d; this.goToToday(); this.closeModal('jumpToModal'); }
     jumpToWeekStart() { this.currentDate = this.getWeekStart(new Date()); this.goToToday(); this.closeModal('jumpToModal'); }
@@ -1233,9 +1394,9 @@ class FirebaseDailyTracker {
 
     exportData(format = 'json') {
         const data = {
-            version: "13.1.0",
+            version: "17.0.0",
             exportedAt: new Date().toISOString(),
-            userData: { entries: this.entries, habits: this.habits, habitColors: this.habitColors, goals: this.goals, achievements: this.achievements }
+            userData: { entries: this.entries, habits: this.habits, habitColors: this.habitColors, goals: this.goals, achievements: this.achievements, changeLog: this.changeLog }
         };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -1261,7 +1422,9 @@ class FirebaseDailyTracker {
                     this.habitColors = userData.habitColors || {};
                     this.goals = userData.goals || {};
                     this.achievements = userData.achievements || {};
-                    this.saveUserDataToFirestore().then(() => {
+                    this.changeLog = userData.changeLog || [];
+                    this.logChange('📥', `Imported data from file: ${file.name}`);
+                    this.uploadDataToFirestore().then(() => {
                         this.renderCurrentView();
                         this.showToast('Data imported successfully!', 'success');
                     });
@@ -1273,16 +1436,66 @@ class FirebaseDailyTracker {
         reader.readAsText(file);
     }
     
+    // --- THEME & PALETTE MANAGEMENT ---
+    
     initializeTheme() {
-        this.updateThemeButton(this.theme);
-        document.documentElement.setAttribute('data-color-scheme', this.theme);
+        this.currentTheme = localStorage.getItem('dailyTrackerTheme') || 'light';
+        this.currentPalette = localStorage.getItem('dailyTrackerPalette') || 'default-teal';
+        this.updateThemeButton(this.currentTheme);
+        document.documentElement.setAttribute('data-color-scheme', this.currentTheme);
+        this.applyPalette(this.currentPalette);
     }
 
     toggleTheme() {
-        this.theme = this.theme === 'light' ? 'dark' : 'light';
-        localStorage.setItem('dailyTrackerTheme', this.theme);
+        this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+        localStorage.setItem('dailyTrackerTheme', this.currentTheme);
         this.initializeTheme();
-        this.saveUserDataToFirestore({ silent: true }); // Sync theme change
+        this.logChange('🎨', `Switched to ${this.currentTheme} mode.`);
+    }
+
+    applyPalette(paletteName) {
+        const palette = this.palettes[paletteName];
+        if (!palette) return;
+
+        for (const [key, value] of Object.entries(palette.colors)) {
+            document.documentElement.style.setProperty(key, value);
+        }
+
+        localStorage.setItem('dailyTrackerPalette', paletteName);
+        this.currentPalette = paletteName;
+        this.updatePaletteSelectorUI(); // Re-render selector to update selection
+        this.renderCurrentView(); // Re-render view to apply colors to canvas charts etc.
+    }
+    
+    renderPaletteSelector() {
+        const container = this.elements.paletteSelector;
+        if (!container) return;
+        container.innerHTML = '';
+        Object.entries(this.palettes).forEach(([id, palette]) => {
+            const swatch = document.createElement('div');
+            swatch.className = 'palette-swatch';
+            swatch.dataset.paletteId = id;
+            swatch.innerHTML = `
+                <div class="palette-colors">
+                    <div class="palette-color-chip" style="background-color: ${palette.preview.bg};"></div>
+                    <div class="palette-color-chip" style="background-color: ${palette.preview.primary};"></div>
+                    <div class="palette-color-chip" style="background-color: ${palette.preview.secondary};"></div>
+                </div>
+                <div class="palette-info">${palette.name}</div>
+            `;
+            swatch.onclick = () => {
+                this.applyPalette(id);
+                this.logChange('🎨', `Theme changed to ${palette.name}.`);
+            };
+            container.appendChild(swatch);
+        });
+        this.updatePaletteSelectorUI();
+    }
+    
+    updatePaletteSelectorUI() {
+        document.querySelectorAll('.palette-swatch').forEach(swatch => {
+            swatch.classList.toggle('selected', swatch.dataset.paletteId === this.currentPalette);
+        });
     }
     
     updateThemeButton(theme) {
@@ -1292,15 +1505,118 @@ class FirebaseDailyTracker {
             : `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg> Light Mode`;
     }
 
+    // --- CHANGE HISTORY ---
+    
+    logChange(icon, description) {
+        const newLog = {
+            icon,
+            description,
+            timestamp: new Date().toISOString(),
+        };
+        this.changeLog.unshift(newLog);
+        // Keep the log to a reasonable size (20 entries) to optimize Firebase storage
+        if (this.changeLog.length > 20) {
+            this.changeLog = this.changeLog.slice(0, 20);
+        }
+    }
+    
+    renderSyncHistory() {
+        const container = this.elements.syncHistoryList;
+        if (!container) return;
+        if (this.changeLog.length === 0) {
+            container.innerHTML = `<div class="empty-state"><p>No changes recorded yet.</p></div>`;
+            return;
+        }
+        container.innerHTML = this.changeLog.map(log => `
+            <div class="sync-history-item">
+                <div class="sync-history-icon">${log.icon}</div>
+                <div class="sync-history-details">
+                    <div class="sync-history-desc">${log.description}</div>
+                    <div class="sync-history-time">${this.timeAgo(log.timestamp)}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    timeAgo(isoString) {
+        const date = new Date(isoString);
+        const seconds = Math.floor((new Date() - date) / 1000);
+        let interval = seconds / 31536000;
+        if (interval > 1) return Math.floor(interval) + " years ago";
+        interval = seconds / 2592000;
+        if (interval > 1) return Math.floor(interval) + " months ago";
+        interval = seconds / 86400;
+        if (interval > 1) return Math.floor(interval) + " days ago";
+        interval = seconds / 3600;
+        if (interval > 1) return Math.floor(interval) + " hours ago";
+        interval = seconds / 60;
+        if (interval > 1) return Math.floor(interval) + " minutes ago";
+        return Math.floor(seconds) + " seconds ago";
+    }
+
     showToast(message, type = 'success') { // success, error, warning
         const toast = this.elements.toast;
         this.elements.toastMessage.textContent = message;
         toast.className = `toast ${type}`;
         setTimeout(() => { toast.className = 'toast hidden'; }, 4000);
     }
+    
+    setupPalettes() {
+        this.availableColors = ["#3B82F6","#10B981","#EF4444","#8B5CF6","#06B6D4","#F59E0B","#EC4899","#6366F1","#14B8A6","#F97316","#84CC16","#A855F7","#E11D48","#0EA5E9","#65A30D"];
+        this.palettes = {
+            'default-teal': {
+                name: 'Default Teal',
+                preview: { bg: '#fcfcf9', primary: '#21808d', secondary: 'rgba(94, 82, 64, 0.12)' },
+                colors: { '--palette-cream-50': '#fcfcf9', '--palette-cream-100': '#fff', '--palette-gray-200': '#f5f5f5', '--palette-slate-500': '#626c71', '--palette-brown-600': '#5e5240', '--palette-charcoal-700': '#1f2121', '--palette-charcoal-800': '#262828', '--palette-slate-900': '#13343b', '--palette-primary-300': '#32b8c6', '--palette-primary-400': '#2da6b2', '--palette-primary-500': '#21808d', '--palette-primary-600': '#1d7480', '--palette-primary-700': '#1a6873', '--palette-error-400': '#ff5459', '--palette-error-500': '#c0152f', '--palette-warning-400': '#e68161', '--palette-warning-500': '#a84b2f', '--palette-brown-600-rgb': '94, 82, 64', '--palette-primary-500-rgb': '33, 128, 141', '--palette-primary-300-rgb': '50, 184, 198', '--palette-error-500-rgb': '192, 21, 47', '--palette-error-400-rgb': '255, 84, 89', '--palette-warning-500-rgb': '168, 75, 47', '--palette-warning-400-rgb': '230, 129, 97' }
+            },
+            'sunset-orange': {
+                name: 'Sunset Orange',
+                preview: { bg: '#fff9f5', primary: '#f97316', secondary: 'rgba(120, 80, 50, 0.12)' },
+                colors: { '--palette-cream-50': '#fff9f5', '--palette-cream-100': '#ffffff', '--palette-gray-200': '#f5f5f5', '--palette-slate-500': '#71717a', '--palette-brown-600': '#785549', '--palette-charcoal-700': '#27272a', '--palette-charcoal-800': '#333336', '--palette-slate-900': '#18181b', '--palette-primary-300': '#fb923c', '--palette-primary-400': '#f97316', '--palette-primary-500': '#ea580c', '--palette-primary-600': '#d9530e', '--palette-primary-700': '#c2410c', '--palette-error-400': '#f43f5e', '--palette-error-500': '#be123c', '--palette-warning-400': '#eab308', '--palette-warning-500': '#ca8a04', '--palette-brown-600-rgb': '120, 85, 73', '--palette-primary-500-rgb': '234, 88, 12', '--palette-primary-300-rgb': '251, 146, 60', '--palette-error-500-rgb': '190, 18, 60', '--palette-error-400-rgb': '244, 63, 94', '--palette-warning-500-rgb': '202, 138, 4', '--palette-warning-400-rgb': '234, 179, 8' }
+            },
+            'forest-green': {
+                name: 'Forest Green',
+                preview: { bg: '#f7f9f7', primary: '#16a34a', secondary: 'rgba(82, 94, 88, 0.12)' },
+                colors: { '--palette-cream-50': '#f7f9f7', '--palette-cream-100': '#ffffff', '--palette-gray-200': '#f4f4f5', '--palette-slate-500': '#52525b', '--palette-brown-600': '#525e58', '--palette-charcoal-700': '#1e2421', '--palette-charcoal-800': '#29302c', '--palette-slate-900': '#171e1a', '--palette-primary-300': '#4ade80', '--palette-primary-400': '#22c55e', '--palette-primary-500': '#16a34a', '--palette-primary-600': '#15803d', '--palette-primary-700': '#166534', '--palette-error-400': '#ef4444', '--palette-error-500': '#b91c1c', '--palette-warning-400': '#f59e0b', '--palette-warning-500': '#d97706', '--palette-brown-600-rgb': '82, 94, 88', '--palette-primary-500-rgb': '22, 163, 74', '--palette-primary-300-rgb': '74, 222, 128', '--palette-error-500-rgb': '185, 28, 28', '--palette-error-400-rgb': '239, 68, 68', '--palette-warning-500-rgb': '217, 119, 6', '--palette-warning-400-rgb': '245, 158, 11' }
+            },
+            'productivity-red': {
+                name: 'Productivity Red',
+                preview: { bg: '#ffffff', primary: '#db4c3f', secondary: 'rgba(200, 200, 200, 0.2)' },
+                colors: { '--palette-cream-50': '#ffffff', '--palette-cream-100': '#f9f9f9', '--palette-gray-200': '#eeeeee', '--palette-slate-500': '#808080', '--palette-brown-600': '#333333', '--palette-charcoal-700': '#1f1f1f', '--palette-charcoal-800': '#282828', '--palette-slate-900': '#000000', '--palette-primary-300': '#e57373', '--palette-primary-400': '#ef5350', '--palette-primary-500': '#db4c3f', '--palette-primary-600': '#c83b31', '--palette-primary-700': '#b72f25', '--palette-error-400': '#607d8b', '--palette-error-500': '#455a64', '--palette-warning-400': '#ffb74d', '--palette-warning-500': '#ff9800', '--palette-brown-600-rgb': '51, 51, 51', '--palette-primary-500-rgb': '219, 76, 63', '--palette-primary-300-rgb': '229, 115, 115', '--palette-error-500-rgb': '69, 90, 100', '--palette-error-400-rgb': '96, 125, 139', '--palette-warning-500-rgb': '255, 152, 0', '--palette-warning-400-rgb': '255, 183, 77' }
+            },
+            'graphite-gray': {
+                name: 'Graphite Gray',
+                preview: { bg: '#f5f5f7', primary: '#52525b', secondary: 'rgba(113, 113, 122, 0.1)' },
+                colors: { '--palette-cream-50': '#f5f5f7', '--palette-cream-100': '#ffffff', '--palette-gray-200': '#e4e4e7', '--palette-slate-500': '#71717a', '--palette-brown-600': '#a1a1aa', '--palette-charcoal-700': '#27272a', '--palette-charcoal-800': '#18181b', '--palette-slate-900': '#09090b', '--palette-primary-300': '#a1a1aa', '--palette-primary-400': '#71717a', '--palette-primary-500': '#52525b', '--palette-primary-600': '#3f3f46', '--palette-primary-700': '#27272a', '--palette-error-400': '#f43f5e', '--palette-error-500': '#be123c', '--palette-warning-400': '#facc15', '--palette-warning-500': '#eab308', '--palette-brown-600-rgb': '161, 161, 170', '--palette-primary-500-rgb': '82, 82, 91', '--palette-primary-300-rgb': '161, 161, 170', '--palette-error-500-rgb': '190, 18, 60', '--palette-error-400-rgb': '244, 63, 94', '--palette-warning-500-rgb': '234, 179, 8', '--palette-warning-400-rgb': '250, 204, 21' }
+            },
+            'ocean-blue': {
+                name: 'Ocean Blue',
+                preview: { bg: '#f0f9ff', primary: '#0ea5e9', secondary: 'rgba(100, 116, 139, 0.1)' },
+                colors: { '--palette-cream-50': '#f0f9ff', '--palette-cream-100': '#ffffff', '--palette-gray-200': '#e0f2fe', '--palette-slate-500': '#64748b', '--palette-brown-600': '#94a3b8', '--palette-charcoal-700': '#1e293b', '--palette-charcoal-800': '#0f172a', '--palette-slate-900': '#020617', '--palette-primary-300': '#38bdf8', '--palette-primary-400': '#0ea5e9', '--palette-primary-500': '#0284c7', '--palette-primary-600': '#0369a1', '--palette-primary-700': '#075985', '--palette-error-400': '#fb7185', '--palette-error-500': '#e11d48', '--palette-warning-400': '#fbbf24', '--palette-warning-500': '#f59e0b', '--palette-brown-600-rgb': '148, 163, 184', '--palette-primary-500-rgb': '2, 132, 199', '--palette-primary-300-rgb': '56, 189, 248', '--palette-error-500-rgb': '225, 29, 72', '--palette-error-400-rgb': '251, 113, 133', '--palette-warning-500-rgb': '245, 158, 11', '--palette-warning-400-rgb': '251, 191, 36' }
+            },
+            'deep-indigo': {
+                name: 'Deep Indigo',
+                preview: { bg: '#f8f8ff', primary: '#6366f1', secondary: 'rgba(100, 100, 120, 0.12)' },
+                colors: { '--palette-cream-50': '#f8f8ff', '--palette-cream-100': '#ffffff', '--palette-gray-200': '#eef2ff', '--palette-slate-500': '#64748b', '--palette-brown-600': '#646478', '--palette-charcoal-700': '#1e1b4b', '--palette-charcoal-800': '#28256e', '--palette-slate-900': '#312e81', '--palette-primary-300': '#818cf8', '--palette-primary-400': '#6366f1', '--palette-primary-500': '#4f46e5', '--palette-primary-600': '#4338ca', '--palette-primary-700': '#3730a3', '--palette-error-400': '#f472b6', '--palette-error-500': '#db2777', '--palette-warning-400': '#38bdf8', '--palette-warning-500': '#0ea5e9', '--palette-brown-600-rgb': '100, 100, 120', '--palette-primary-500-rgb': '79, 70, 229', '--palette-primary-300-rgb': '129, 140, 248', '--palette-error-500-rgb': '219, 39, 119', '--palette-error-400-rgb': '244, 114, 182', '--palette-warning-500-rgb': '14, 165, 233', '--palette-warning-400-rgb': '56, 189, 248' }
+            }
+        };
+    }
 }
 
 // --- APP INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
     new FirebaseDailyTracker();
+    
+    // Register Service Worker for PWA capabilities
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                    console.log('✅ Service Worker registered with scope:', registration.scope);
+                })
+                .catch(error => {
+                    console.error('❌ Service Worker registration failed:', error);
+                });
+        });
+    }
 });
